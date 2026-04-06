@@ -1,4 +1,4 @@
-const cacheName = 'showtrack-v4.2';
+const cacheName = 'showtrack-v5';
 const assets = [
     './',
     './index.html',
