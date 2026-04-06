@@ -232,16 +232,17 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
+        // Updated to standard mobile URL schemes to attempt to launch apps directly
         const STREAMING_APPS = [
             { name: 'Default', url: '' },
-            { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
-            { name: 'Disney+', url: 'https://www.disneyplus.com' },
-            { name: 'Paramount+', url: 'https://www.paramountplus.com' },
-            { name: 'Prime Video', url: 'https://www.amazon.com/gp/video/storefront' },
-            { name: 'Peacock', url: 'https://www.peacocktv.com' },
-            { name: 'Discovery+', url: 'https://www.discoveryplus.com/' },
-            { name: 'PBS', url: 'https://www.pbs.org/' },
-			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com/' }
+            { name: 'Netflix', url: 'nflx://www.netflix.com/search?q=' },
+            { name: 'Disney+', url: 'disneyplus://' },
+            { name: 'Paramount+', url: 'paramountplus://' },
+            { name: 'Prime Video', url: 'primevideo://' },
+            { name: 'Peacock', url: 'peacock://' },
+            { name: 'Discovery+', url: 'discoveryplus://' },
+            { name: 'PBS', url: 'pbsvideo://' },
+			{ name: 'Hallmark+', url: 'hallmarkplus://' }
         ];
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null;
@@ -498,7 +499,8 @@
             if (appName === 'Default') return q.url; 
             const app = STREAMING_APPS.find(a => a.name === appName);
             if (app) {
-                if (app.url.includes('search')) return app.url + encodeURIComponent(q.item.name);
+                // For deep links, if the URL includes 'search' or '?q=', append the show name
+                if (app.url.includes('search') || app.url.includes('?q=')) return app.url + encodeURIComponent(q.item.name);
                 return app.url;
             }
             return q.url;
