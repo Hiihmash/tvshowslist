@@ -151,6 +151,16 @@
                     <div onclick="setTheme('#f43f5e')" class="theme-dot bg-rose-500" data-theme="#f43f5e"></div>
                 </div>
             </section>
+            
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Feed History</label>
+                <div class="flex gap-2">
+                    <button onclick="setFeedDays(7)" id="btn-days-7" class="flex-1 py-2 text-[10px] font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">7 Days</button>
+                    <button onclick="setFeedDays(14)" id="btn-days-14" class="flex-1 py-2 text-[10px] font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">14 Days</button>
+                    <button onclick="setFeedDays(30)" id="btn-days-30" class="flex-1 py-2 text-[10px] font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">30 Days</button>
+                </div>
+            </section>
+
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 flex justify-around text-center">
                 <div><p class="text-[10px] font-bold text-slate-500 uppercase">Followed</p><p id="stat-followed" class="text-xl font-black text-white">0</p></div>
                 <div class="w-px bg-slate-800"></div>
@@ -211,7 +221,6 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
-        // Define standard streaming app links
         const STREAMING_APPS = [
             { name: 'Default', url: '' },
             { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
@@ -226,10 +235,13 @@
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null;
         let watchlist = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0}');
+        let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0, "feedDays": 7}');
+        
+        // Ensure feedDays exists if loading from an older save
+        if (!settings.feedDays) settings.feedDays = 7;
+
         let tvQueue = [], ytQueue = [], watchlistFilterQuery = '';
 
-        // Safe Service Worker Registration
         if ('serviceWorker' in navigator && window.location.protocol.startsWith('http') && !window.location.host.includes('goog')) { 
             window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); 
         }
@@ -248,9 +260,7 @@
                 });
             }
             
-            // Step 1: Immediate render from permanent storage
             refreshUI(false); 
-            // Step 2: Background refresh to get the latest schedules
             refreshTVData();
         });
 
@@ -338,7 +348,8 @@
 
         async function refreshTVData() {
             tvQueue = [];
-            const now = Date.now(), weekAgo = now - 604800000;
+            const now = Date.now();
+            const historyLimit = now - (settings.feedDays * 86400000);
             const tvItems = watchlist.filter(i => i.type === 'tv');
 
             for (const item of tvItems) {
@@ -346,29 +357,24 @@
                     const res = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
                     const eps = await res.json();
                     if (Array.isArray(eps)) {
-                        // Populate TV Feed
                         eps.filter(e => {
                             const t = new Date(e.airstamp).getTime();
-                            return t <= now && t >= weekAgo && t > (item.lastWatchedAirstamp || 0);
+                            return t <= now && t >= historyLimit && t > (item.lastWatchedAirstamp || 0);
                         }).forEach(e => tvQueue.push({ item, title: `S${e.season}E${e.number}: ${e.name}`, date: e.airstamp, url: item.officialSite || e.url, thumb: item.image }));
                         
-                        // Find the next upcoming episode
                         const nextEp = eps.find(e => new Date(e.airstamp).getTime() > now);
                         const newDate = nextEp ? nextEp.airstamp : null;
                         
-                        // Update and save immediately for each show
                         if (item.nextAirDate !== newDate) {
                             item.nextAirDate = newDate;
                             saveData();
                         }
-                        // Refresh UI show-by-show so the user sees progress
                         if (activeTab === 'watchlist' || activeTab === 'tv') refreshUI(false);
                     }
                 } catch (e) { console.error("TV Fetch Error:", e); }
             }
         }
 
-        // Parse ISO 8601 duration (e.g. PT1M30S) to seconds
         function parseDuration(duration) {
             const matches = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
             const hours = parseInt(matches[1] || 0);
@@ -379,7 +385,8 @@
 
         async function refreshYouTubeData() {
             ytQueue = [];
-            const now = Date.now(), weekAgo = now - 604800000;
+            const now = Date.now();
+            const historyLimit = now - (settings.feedDays * 86400000);
             const ytItems = watchlist.filter(i => i.type === 'youtube');
             
             for (const item of ytItems) {
@@ -412,7 +419,7 @@
                             else if (pref === 'shorts' && isShort) shouldInclude = true;
                             else if (pref === 'videos' && !isShort) shouldInclude = true;
 
-                            if (shouldInclude && t >= weekAgo && t > (item.lastWatchedAirstamp || 0)) {
+                            if (shouldInclude && t >= historyLimit && t > (item.lastWatchedAirstamp || 0)) {
                                 ytQueue.push({ 
                                     item, 
                                     title: v.snippet.title, 
@@ -449,16 +456,12 @@
             showToast(`Show set to: ${nextApp}`);
         }
 
-        // Helper to decide the final click URL based on user preference
         function getActionUrl(q, type) {
             if (type === 'youtube') return q.url;
-            
             const appName = q.item.tvApp || 'Default';
-            if (appName === 'Default') return q.url; // Use original TVMaze/Official link
-            
+            if (appName === 'Default') return q.url; 
             const app = STREAMING_APPS.find(a => a.name === appName);
             if (app) {
-                // If it's a search-based app, try to append the show name
                 if (app.url.includes('search')) return app.url + encodeURIComponent(q.item.name);
                 return app.url;
             }
@@ -469,7 +472,6 @@
             const isYT = item.type === 'youtube';
             const ytPref = item.ytPref || 'videos';
             const prefLabel = ytPref === 'both' ? 'All Content' : (ytPref === 'shorts' ? 'Shorts Only' : 'Videos Only');
-            
             const isTV = item.type === 'tv';
             const tvApp = item.tvApp || 'Default';
             
@@ -480,14 +482,11 @@
                     <div class="flex items-center gap-2 mt-1">
                         <button onclick="reAddLast('${item.id}', '${item.type}')" class="text-slate-500 p-1 hover:text-white transition-colors" title="Re-add last video"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
                         <span class="text-[8px] text-slate-500 uppercase font-black tracking-widest opacity-50">${item.platform || ''}</span>
-                        
                         ${isYT ? `<button onclick="cycleYtPref('${item.id}')" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-bold uppercase ml-1 hover:border-purple-500/50">${prefLabel}</button>` : ''}
-                        
                         ${isTV ? `<button onclick="cycleTvApp('${item.id}')" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-bold uppercase ml-1 hover:border-purple-500/50 flex items-center gap-1">
                             <i data-lucide="play" class="w-2 h-2"></i> ${tvApp}
                         </button>` : ''}
                     </div>
-                    
                     ${isTV && item.nextAirDate ? `
                     <div class="flex items-center gap-1 mt-1.5 text-[9px] text-purple-400 font-bold">
                         <i data-lucide="calendar" class="w-3 h-3"></i>
@@ -570,8 +569,31 @@
             const activeTabEl = document.querySelector('.tab-active');
             if (activeTabEl) { activeTabEl.style.color = color; activeTabEl.style.borderBottomColor = color; }
             document.querySelectorAll('.bg-purple-600').forEach(b => b.style.backgroundColor = color);
+            updateSettingsUI();
         }
+
         function setTheme(c) { settings.theme = c; applyTheme(c); saveSettings(true); }
+
+        function setFeedDays(d) {
+            settings.feedDays = d;
+            updateSettingsUI();
+            saveSettings(true);
+            showToast(`Feed history set to ${d} days`);
+        }
+
+        function updateSettingsUI() {
+            [7, 14, 30].forEach(d => {
+                const btn = document.getElementById(`btn-days-${d}`);
+                if (btn) {
+                    const isActive = settings.feedDays === d;
+                    btn.style.borderColor = isActive ? settings.theme : '';
+                    btn.style.backgroundColor = isActive ? settings.theme : '';
+                    btn.classList.toggle('text-white', isActive);
+                    btn.classList.toggle('text-slate-400', !isActive);
+                }
+            });
+        }
+
         function toggleSearch() { document.getElementById('searchOverlay').classList.toggle('hidden'); }
         function toggleSettings() { 
             document.getElementById('settingsOverlay').classList.toggle('hidden'); 
@@ -579,6 +601,7 @@
             const wtd = document.getElementById('stat-watched');
             if (fld) fld.innerText = watchlist.length; 
             if (wtd) wtd.innerText = settings.lifetimeWatched || 0; 
+            updateSettingsUI();
         }
         function clearSearch() { document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
         function updateWatchlistFilter() { 
@@ -591,7 +614,7 @@
             const input = document.getElementById('ytApiKeyInput');
             if (input) settings.ytApiKey = input.value;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); 
-            if(!silent) { toggleSettings(); refreshUI(true); } 
+            if(!silent) { toggleSettings(); refreshUI(true); refreshTVData(); } 
         }
         function showToast(m) { 
             const t = document.getElementById('toast'); 
@@ -650,7 +673,6 @@
                 watchlist.splice(idx, 1);
             } else {
                 watchlist.push({ ...d, lastWatchedAirstamp: 0, ytPref: 'videos', tvApp: 'Default' });
-                // Trigger an immediate date fetch for just this new show
                 refreshTVData();
             }
             saveData(); refreshUI(false); 
