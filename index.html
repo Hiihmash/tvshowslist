@@ -232,17 +232,17 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
-        // Updated to standard mobile URL schemes to attempt to launch apps directly
+        // Reverted to standard HTTPS Universal Links for stability and app-opening compatibility
         const STREAMING_APPS = [
             { name: 'Default', url: '' },
-            { name: 'Netflix', url: 'nflx://www.netflix.com/search?q=' },
-            { name: 'Disney+', url: 'disneyplus://' },
-            { name: 'Paramount+', url: 'paramountplus://' },
-            { name: 'Prime Video', url: 'primevideo://' },
-            { name: 'Peacock', url: 'peacock://' },
-            { name: 'Discovery+', url: 'discoveryplus://' },
-            { name: 'PBS', url: 'pbsvideo://' },
-			{ name: 'Hallmark+', url: 'hallmarkplus://' }
+            { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
+            { name: 'Disney+', url: 'https://www.disneyplus.com' },
+            { name: 'Paramount+', url: 'https://www.paramountplus.com' },
+            { name: 'Prime Video', url: 'https://www.amazon.com/gp/video/storefront' },
+            { name: 'Peacock', url: 'https://www.peacocktv.com' },
+            { name: 'Discovery+', url: 'https://www.discoveryplus.com/' },
+            { name: 'PBS', url: 'https://www.pbs.org/' },
+			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com/' }
         ];
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null;
@@ -472,7 +472,6 @@
             }).join('');
             
             document.getElementById('appSelectorOverlay').classList.remove('hidden');
-            // Ensure icons in modal (if any) are created and theme applied
             applyTheme(settings.theme);
         }
 
@@ -499,7 +498,6 @@
             if (appName === 'Default') return q.url; 
             const app = STREAMING_APPS.find(a => a.name === appName);
             if (app) {
-                // For deep links, if the URL includes 'search' or '?q=', append the show name
                 if (app.url.includes('search') || app.url.includes('?q=')) return app.url + encodeURIComponent(q.item.name);
                 return app.url;
             }
@@ -540,11 +538,13 @@
         function renderQueue(items, type) {
             return items.sort((a,b) => new Date(b.date) - new Date(a.date)).map(q => {
                 const finalUrl = getActionUrl(q, type);
+                // Updated: YouTube links use _blank (new tab), TV app links use _self (prevent black screen tab)
+                const target = type === 'youtube' ? '_blank' : '_self';
                 return `
                 <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
                     <div class="flex items-center gap-4 p-3">
                         <img src="${q.thumb}" class="w-20 h-12 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
-                        <a href="${finalUrl}" target="_blank" class="flex-1 min-w-0 block active:opacity-70">
+                        <a href="${finalUrl}" target="${target}" class="flex-1 min-w-0 block active:opacity-70">
                             <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${type === 'tv' ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
                             <h4 class="font-bold text-sm truncate text-white">${q.item.name}</h4>
                             <p class="text-[10px] text-slate-400 truncate">${q.title}</p>
@@ -609,11 +609,8 @@
             const activeTabEl = document.querySelector('.tab-active');
             if (activeTabEl) { activeTabEl.style.color = color; activeTabEl.style.borderBottomColor = color; }
             document.querySelectorAll('.bg-purple-600').forEach(b => b.style.backgroundColor = color);
-            
-            // Specifically update modal selection backgrounds if open
             const activeModalBtn = document.querySelector('#appSelectorList .bg-purple-600');
             if (activeModalBtn) activeModalBtn.style.backgroundColor = color;
-            
             updateSettingsUI();
         }
 
