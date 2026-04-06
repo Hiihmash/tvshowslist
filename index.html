@@ -238,16 +238,18 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
+        // Reverted to standard HTTPS URLs for stability.
+        // If the native app is installed, the phone will offer to open it automatically.
         const STREAMING_APPS = [
-            { name: 'Default', url: '', scheme: '' },
-            { name: 'Netflix', url: 'https://www.netflix.com', scheme: 'nflx://' },
-            { name: 'Disney+', url: 'https://www.disneyplus.com', scheme: 'disneyplus://' },
-            { name: 'Paramount+', url: 'https://www.paramountplus.com', scheme: 'paramountplus://' },
-            { name: 'Prime Video', url: 'https://www.amazon.com/video', scheme: 'primevideo://' },
-            { name: 'Peacock', url: 'https://www.peacocktv.com', scheme: 'peacock://' },
-            { name: 'Discovery+', url: 'https://www.discoveryplus.com', scheme: 'discoveryplus://' },
-            { name: 'PBS', url: 'https://www.pbs.org', scheme: 'pbsvideo://' },
-			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com', scheme: 'hallmarkplus://' }
+            { name: 'Default', url: '' },
+            { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
+            { name: 'Disney+', url: 'https://www.disneyplus.com' },
+            { name: 'Paramount+', url: 'https://www.paramountplus.com' },
+            { name: 'Prime Video', url: 'https://www.amazon.com/gp/video/storefront' },
+            { name: 'Peacock', url: 'https://www.peacocktv.com' },
+            { name: 'Discovery+', url: 'https://www.discoveryplus.com/' },
+            { name: 'PBS', url: 'https://www.pbs.org/' },
+			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com/' }
         ];
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null;
@@ -500,9 +502,7 @@
         }
 
         /**
-         * Launch a native app using its URI scheme. 
-         * In STANDALONE PWA mode, window.location.href is the most reliable way 
-         * to trigger system intents without creating empty tabs or popups.
+         * Launch a native app or website using standard HTTPS URLs.
          */
         function launchApp(appId, originalUrl) {
             const item = watchlist.find(i => i.id == appId);
@@ -514,10 +514,13 @@
             }
 
             const app = STREAMING_APPS.find(a => a.name === appName);
-            if (app && app.scheme) {
-                // By directly setting href, we tell the phone to handle the protocol.
-                // Standalone PWAs won't show a blank page if the scheme is intercepted.
-                window.location.href = app.scheme;
+            if (app && app.url) {
+                let finalUrl = app.url;
+                // If it's a search URL, append the show name for convenience
+                if (finalUrl.includes('search') || finalUrl.includes('?q=')) {
+                    finalUrl += encodeURIComponent(item.name);
+                }
+                window.open(finalUrl, '_blank');
             } else {
                 window.open(originalUrl, '_blank');
             }
