@@ -189,6 +189,12 @@
     <!-- Main Content Area -->
     <main class="p-4 lg:p-8 max-w-2xl mx-auto">
         <section id="section-watchlist" class="space-y-2">
+            <div id="watchlist-header" class="flex justify-between items-center hidden mb-2 px-1">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Your Watchlist</p>
+                <button id="btn-readd-all" onclick="reAddAllTV()" class="text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 transition-all opacity-80 hover:opacity-100">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Re-add All TV
+                </button>
+            </div>
             <div id="watchlistFilterBar" class="hidden space-y-3 mb-6">
                 <input type="text" id="watchlistFilterInput" oninput="updateWatchlistFilter()" placeholder="Find followed content..." class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none">
             </div>
@@ -206,7 +212,7 @@
         <section id="section-tv" class="hidden space-y-4">
             <div id="tv-header" class="flex justify-between items-center hidden">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">TV Feed</p>
-                <button onclick="markAllTypeWatched('tv')" class="text-[10px] font-bold text-purple-400 px-3 py-1 bg-purple-400/10 rounded-full">Mark All Watched</button>
+                <button id="btn-mark-all-tv" onclick="markAllTypeWatched('tv')" class="text-[10px] font-bold px-3 py-1 rounded-full">Mark All Watched</button>
             </div>
             <div id="tvQueue" class="space-y-6"></div>
         </section>
@@ -232,7 +238,6 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
-        // Reverted to standard HTTPS Universal Links for stability and app-opening compatibility
         const STREAMING_APPS = [
             { name: 'Default', url: '' },
             { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
@@ -314,10 +319,12 @@
             const badgeYT = document.getElementById('badge-yt');
             const filterBar = document.getElementById('watchlistFilterBar');
             const emptyState = document.getElementById('emptyState');
+            const watchlistHeader = document.getElementById('watchlist-header');
             
             if (badgeWatchlist) badgeWatchlist.innerText = watchlist.length;
             if (filterBar) filterBar.classList.toggle('hidden', watchlist.length === 0);
             if (emptyState) emptyState.classList.toggle('hidden', watchlist.length > 0);
+            if (watchlistHeader) watchlistHeader.classList.toggle('hidden', watchlist.length === 0);
 
             if (activeTab === 'watchlist' && listDiv) {
                 let tvHtml = '', ytHtml = '';
@@ -368,6 +375,7 @@
                     const res = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
                     const eps = await res.json();
                     if (Array.isArray(eps)) {
+                        // Populate TV Feed
                         eps.filter(e => {
                             const t = new Date(e.airstamp).getTime();
                             return t <= now && t >= historyLimit && t > (item.lastWatchedAirstamp || 0);
@@ -538,7 +546,6 @@
         function renderQueue(items, type) {
             return items.sort((a,b) => new Date(b.date) - new Date(a.date)).map(q => {
                 const finalUrl = getActionUrl(q, type);
-                // Updated: YouTube links use _blank (new tab), TV app links use _self (prevent black screen tab)
                 const target = type === 'youtube' ? '_blank' : '_self';
                 return `
                 <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
@@ -581,6 +588,32 @@
             } catch(e) { showToast("Failed to re-add."); }
         }
 
+        async function reAddAllTV() {
+            const tvItems = watchlist.filter(i => i.type === 'tv');
+            if (tvItems.length === 0) return;
+            
+            showToast("Resetting all TV releases...");
+            
+            try {
+                await Promise.all(tvItems.map(async (item) => {
+                    const res = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
+                    const eps = await res.json();
+                    if (Array.isArray(eps)) {
+                        const aired = eps.filter(e => new Date(e.airstamp) <= new Date());
+                        if (aired.length) {
+                            const lastTime = new Date(aired[aired.length - 1].airstamp).getTime();
+                            item.lastWatchedAirstamp = lastTime - 1;
+                        }
+                    }
+                }));
+                saveData();
+                showToast("All TV shows re-added!");
+                refreshTVData();
+            } catch (e) {
+                showToast("Error resetting feeds.");
+            }
+        }
+
         function markWatched(id, time) {
             const idx = watchlist.findIndex(s => s.id == id);
             if (idx > -1) { 
@@ -609,6 +642,19 @@
             const activeTabEl = document.querySelector('.tab-active');
             if (activeTabEl) { activeTabEl.style.color = color; activeTabEl.style.borderBottomColor = color; }
             document.querySelectorAll('.bg-purple-600').forEach(b => b.style.backgroundColor = color);
+            
+            const readdAllBtn = document.getElementById('btn-readd-all');
+            if (readdAllBtn) {
+                readdAllBtn.style.color = color;
+                readdAllBtn.style.backgroundColor = color + '1A'; // 10% alpha
+            }
+
+            const markAllTvBtn = document.getElementById('btn-mark-all-tv');
+            if (markAllTvBtn) {
+                markAllTvBtn.style.color = color;
+                markAllTvBtn.style.backgroundColor = color + '1A';
+            }
+
             const activeModalBtn = document.querySelector('#appSelectorList .bg-purple-600');
             if (activeModalBtn) activeModalBtn.style.backgroundColor = color;
             updateSettingsUI();
