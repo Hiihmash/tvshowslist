@@ -8,6 +8,10 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8b5cf6">
     
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/716/716429.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/716/716429.png">
+    
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -66,44 +70,31 @@
             margin-bottom: 0.75rem;
             margin-top: 1.5rem;
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            align-items: center; gap: 0.5rem;
         }
 
         .section-label:first-child { margin-top: 0.5rem; }
-
         .btn-action { transition: all 0.2s ease; }
         .btn-action:active { transform: scale(0.95); }
 
         .theme-dot {
-            width: 28px;
-            height: 28px;
-            border-radius: 999px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            width: 28px; height: 28px;
+            border-radius: 999px; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.2s;
         }
         .theme-dot.active { border-color: white; transform: scale(1.2); }
 
-        /* Animation for list items */
-        .fade-in-list {
-            animation: fadeIn 0.3s ease forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .fade-in-list { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen pb-24">
 
     <!-- Header -->
     <header class="sticky top-0 z-50 glass-card px-6 py-4 flex justify-between items-center border-b border-slate-800">
-        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-           Mash's ShowTracker
-        </h1>
+        <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Mash's ShowTracker</h1>
         <div class="flex gap-1">
-            <button onclick="refreshUI()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Refresh Data">
+            <button onclick="manualTabRefresh()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Refresh Data">
                 <i data-lucide="refresh-cw" class="w-5 h-5"></i>
             </button>
             <button onclick="toggleSearch()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400">
@@ -117,49 +108,40 @@
 
     <!-- Tab Navigation -->
     <nav class="sticky top-[65px] z-40 bg-slate-950/80 backdrop-blur-md flex border-b border-slate-800">
-        <button onclick="switchTab('watchlist')" id="tab-watchlist" class="flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 tab-active">
-            <i data-lucide="layers" class="w-4 h-4"></i>
-            Watchlist
-            <span id="badge-watchlist" class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded-full text-slate-400">0</span>
+        <button onclick="switchTab('watchlist')" id="tab-watchlist" class="relative flex-1 py-4 text-[10px] font-bold transition-all flex flex-col items-center gap-1 tab-active">
+            <i data-lucide="layers" class="w-4 h-4"></i> WATCHLIST
+            <span id="badge-watchlist" class="absolute top-2 right-1/2 translate-x-8 text-[8px] bg-slate-800 px-1 rounded-full text-slate-400">0</span>
         </button>
-        <button onclick="switchTab('releases')" id="tab-releases" class="flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-500">
-            <i data-lucide="clock" class="w-4 h-4"></i>
-            Releases
-            <span id="badge-releases" class="hidden text-[10px] bg-pink-600 px-1.5 py-0.5 rounded-full text-white font-black">0</span>
+        <button onclick="switchTab('tv')" id="tab-tv" class="relative flex-1 py-4 text-[10px] font-bold transition-all flex flex-col items-center gap-1 text-slate-500">
+            <i data-lucide="monitor" class="w-4 h-4"></i> TV
+            <span id="badge-tv" class="hidden absolute top-2 right-1/2 translate-x-8 text-[8px] bg-pink-600 px-1 rounded-full text-white">0</span>
+        </button>
+        <button onclick="switchTab('youtube')" id="tab-youtube" class="relative flex-1 py-4 text-[10px] font-bold transition-all flex flex-col items-center gap-1 text-slate-500">
+            <i data-lucide="play" class="w-4 h-4"></i> YOUTUBE
+            <span id="badge-yt" class="hidden absolute top-2 right-1/2 translate-x-8 text-[8px] bg-red-600 px-1 rounded-full text-white font-black">0</span>
         </button>
     </nav>
 
-    <!-- Search Overlay (Adding New) -->
+    <!-- Search Overlay -->
     <div id="searchOverlay" class="fixed inset-0 z-[60] bg-slate-950/95 hidden p-6 flex-col">
         <div class="flex items-center gap-4 mb-4">
-            <button onclick="toggleSearch()" class="p-2">
-                <i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i>
-            </button>
+            <button onclick="toggleSearch()" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i></button>
             <div class="flex-1 flex bg-slate-800 rounded-xl p-1">
                 <button id="searchTypeTV" onclick="setSearchType('tv')" class="flex-1 py-2 text-xs font-bold rounded-lg search-type-active">TV Shows</button>
                 <button id="searchTypeYT" onclick="setSearchType('youtube')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400">YouTube</button>
             </div>
         </div>
         <div class="relative mb-6">
-            <input type="text" id="searchInput" placeholder="Search to add..." 
-                   class="w-full bg-slate-800 border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none pr-10">
-            <button onclick="clearSearch()" class="absolute right-3 top-3 text-slate-500">
-                <i data-lucide="x-circle" class="w-5 h-5"></i>
-            </button>
+            <input type="text" id="searchInput" placeholder="Search to add..." class="w-full bg-slate-800 border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none pr-10">
+            <button onclick="clearSearch()" class="absolute right-3 top-3 text-slate-500"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
         </div>
         <div id="searchResults" class="flex-1 overflow-y-auto space-y-4 no-scrollbar"></div>
     </div>
 
     <!-- Settings Overlay -->
     <div id="settingsOverlay" class="fixed inset-0 z-[60] bg-slate-950/95 hidden p-6 flex-col overflow-y-auto no-scrollbar">
-        <div class="flex items-center gap-4 mb-6">
-            <button onclick="toggleSettings()" class="p-2">
-                <i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i>
-            </button>
-            <h2 class="text-xl font-bold">Settings</h2>
-        </div>
+        <div class="flex items-center gap-4 mb-6"><button onclick="toggleSettings()" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i></button><h2 class="text-xl font-bold">Settings</h2></div>
         <div class="space-y-8">
-            <!-- Theme Picker -->
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-3">App Theme</label>
                 <div class="flex gap-4">
@@ -169,61 +151,25 @@
                     <div onclick="setTheme('#f43f5e')" class="theme-dot bg-rose-500" data-theme="#f43f5e"></div>
                 </div>
             </section>
-
-            <!-- Stats -->
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 flex justify-around text-center">
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase">Total Followed</p>
-                    <p id="stat-followed" class="text-xl font-black text-white">0</p>
-                </div>
+                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Followed</p><p id="stat-followed" class="text-xl font-black text-white">0</p></div>
                 <div class="w-px bg-slate-800"></div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase">Lifetime Watched</p>
-                    <p id="stat-watched" class="text-xl font-black text-white">0</p>
-                </div>
+                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Watched</p><p id="stat-watched" class="text-xl font-black text-white">0</p></div>
             </section>
-
-            <section>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">YouTube API Key</label>
-                <input type="password" id="ytApiKeyInput" placeholder="Enter API Key..." 
-                       class="w-full bg-slate-800 border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none">
-            </section>
-            
-            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
-                <h3 class="text-sm font-bold mb-4 flex items-center gap-2 text-slate-300">
-                    <i data-lucide="database" class="w-4 h-4"></i>
-                    Data Management
-                </h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="exportData()" class="bg-slate-800 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-2 border border-slate-700">
-                        <i data-lucide="download" class="w-4 h-4"></i> Export Backup
-                    </button>
-                    <button onclick="importData()" class="bg-slate-800 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-2 border border-slate-700">
-                        <i data-lucide="upload" class="w-4 h-4"></i> Import Backup
-                    </button>
-                </div>
-            </section>
-
-            <button onclick="saveSettings()" class="w-full bg-purple-600 py-4 rounded-2xl font-bold btn-action" id="save-btn">Save Changes</button>
+            <section><label class="block text-xs font-bold text-slate-400 uppercase mb-2">YouTube API Key</label><input type="password" id="ytApiKeyInput" class="w-full bg-slate-800 border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"></section>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="exportData()" class="bg-slate-800 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-2 border border-slate-700"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                <button onclick="importData()" class="bg-slate-800 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-2 border border-slate-700"><i data-lucide="upload" class="w-4 h-4"></i> Import</button>
+            </div>
+            <button onclick="saveSettings()" class="w-full bg-purple-600 py-4 rounded-2xl font-bold btn-action">Save Changes</button>
         </div>
     </div>
 
     <!-- Main Content Area -->
     <main class="p-4 lg:p-8 max-w-2xl mx-auto">
-        
-        <!-- Tab: Watchlist -->
         <section id="section-watchlist" class="space-y-2">
             <div id="watchlistFilterBar" class="hidden space-y-3 mb-6">
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-500"></i>
-                    <input type="text" id="watchlistFilterInput" oninput="updateWatchlistFilter()" placeholder="Find followed content..." 
-                           class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-1 focus:ring-purple-500 outline-none">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="setWatchlistTypeFilter('all')" id="filter-btn-all" class="flex-1 py-2 text-[10px] font-bold rounded-lg border border-slate-700/50 transition-all">All</button>
-                    <button onclick="setWatchlistTypeFilter('tv')" id="filter-btn-tv" class="flex-1 py-2 text-[10px] font-bold rounded-lg border border-slate-700/50 transition-all">TV Shows</button>
-                    <button onclick="setWatchlistTypeFilter('youtube')" id="filter-btn-youtube" class="flex-1 py-2 text-[10px] font-bold rounded-lg border border-slate-700/50 transition-all">YouTube</button>
-                </div>
+                <input type="text" id="watchlistFilterInput" oninput="updateWatchlistFilter()" placeholder="Find followed content..." class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none">
             </div>
             <div id="watchlist-content" class="space-y-2"></div>
             <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-slate-500">
@@ -235,438 +181,500 @@
             </div>
         </section>
 
-        <!-- Tab: Releases -->
-        <section id="section-releases" class="hidden space-y-4">
-            <div id="releases-header" class="flex justify-between items-center hidden">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recent Feed</p>
-                <button onclick="markAllWatched()" class="text-[10px] font-bold text-purple-400 px-3 py-1 bg-purple-400/10 rounded-full hover:bg-purple-400/20 transition-all">
-                    Mark All Watched
-                </button>
+        <!-- TV Releases Section -->
+        <section id="section-tv" class="hidden space-y-4">
+            <div id="tv-header" class="flex justify-between items-center hidden">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">TV Feed</p>
+                <button onclick="markAllTypeWatched('tv')" class="text-[10px] font-bold text-purple-400 px-3 py-1 bg-purple-400/10 rounded-full">Mark All Watched</button>
             </div>
-            <div id="releaseQueue" class="space-y-6">
-                <div class="flex flex-col items-center justify-center py-20">
-                    <div class="loader mb-4"></div>
-                    <p class="text-xs text-slate-500">Syncing schedules...</p>
-                </div>
+            <div id="tvQueue" class="space-y-6"></div>
+        </section>
+
+        <!-- YouTube Releases Section -->
+        <section id="section-youtube" class="hidden space-y-4">
+            <div id="yt-header" class="flex justify-between items-center hidden">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">YouTube Feed</p>
+                <button onclick="markAllTypeWatched('youtube')" class="text-[10px] font-bold text-red-400 px-3 py-1 bg-red-400/10 rounded-full">Mark All Watched</button>
             </div>
+            <div id="ytSyncPrompt" class="flex flex-col items-center justify-center py-20 text-center">
+                <i data-lucide="refresh-cw" class="w-12 h-12 mb-4 text-slate-700"></i>
+                <p class="text-sm text-slate-500 mb-6">Sync YouTube to check for new videos.<br><span class="text-[10px] opacity-50">(Uses API Quota)</span></p>
+                <button onclick="syncYouTube()" class="bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95">Sync Subscriptions</button>
+            </div>
+            <div id="ytQueue" class="space-y-6"></div>
         </section>
     </main>
 
-    <!-- UI Components -->
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-card px-6 py-3 rounded-2xl border-purple-500/50 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-[100]">
-        <span id="toastMessage" class="text-sm font-medium"></span>
-    </div>
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass-card px-6 py-3 rounded-2xl border-purple-500/50 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-[100]"><span id="toastMessage" class="text-sm font-medium"></span></div>
 
     <script>
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
-        let activeTab = 'watchlist';
-        let searchType = 'tv';
-        let globalQueue = []; 
-        let watchlistFilterQuery = '';
-        let watchlistFilterType = 'all';
-        let searchTimeout = null;
         
+        // Define standard streaming app links
+        const STREAMING_APPS = [
+            { name: 'Default', url: '' },
+            { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
+            { name: 'Disney+', url: 'https://www.disneyplus.com' },
+            { name: 'Paramount+', url: 'https://www.paramountplus.com' },
+            { name: 'Prime Video', url: 'https://www.amazon.com/gp/video/storefront' },
+            { name: 'Peacock', url: 'https://www.peacocktv.com' },
+            { name: 'Discovery+', url: 'https://www.discoveryplus.com/' },
+            { name: 'PBS', url: 'https://www.pbs.org/' },
+			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com/' }
+        ];
+
+        let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null;
         let watchlist = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0}');
+        let tvQueue = [], ytQueue = [], watchlistFilterQuery = '';
 
-        // SERVICE WORKER REGISTRATION
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg failed:', err));
-            });
+        // Safe Service Worker Registration
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http') && !window.location.host.includes('goog')) { 
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); 
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            applyTheme(settings.theme);
+            applyTheme(settings.theme); 
             lucide.createIcons();
-            document.getElementById('ytApiKeyInput').value = settings.ytApiKey;
-            setWatchlistTypeFilter('all');
-            refreshUI();
+            const apiKeyInput = document.getElementById('ytApiKeyInput');
+            if (apiKeyInput) apiKeyInput.value = settings.ytApiKey;
             
             const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => performSearch(e.target.value), 400);
-            });
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => performSearch(e.target.value), 400);
+                });
+            }
+            
+            // Step 1: Immediate render from permanent storage
+            refreshUI(false); 
+            // Step 2: Background refresh to get the latest schedules
+            refreshTVData();
         });
-
-        function applyTheme(color) {
-            document.documentElement.style.setProperty('--brand-primary', color);
-            const rgb = color.match(/\w\w/g).map(x => parseInt(x, 16));
-            document.documentElement.style.setProperty('--brand-glow', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.5)`);
-            
-            const bgPurple = document.querySelectorAll('.bg-purple-600');
-            bgPurple.forEach(el => el.style.backgroundColor = color);
-            
-            const textPurple = document.querySelectorAll('.text-purple-400');
-            textPurple.forEach(el => el.style.color = color);
-            
-            const borderPurple = document.querySelectorAll('.border-purple-500\\/50');
-            borderPurple.forEach(el => el.style.borderColor = color);
-
-            const tabActive = document.querySelector('.tab-active');
-            if(tabActive) tabActive.style.color = color;
-            if(tabActive) tabActive.style.borderBottomColor = color;
-            
-            document.querySelectorAll('.theme-dot').forEach(dot => {
-                dot.classList.toggle('active', dot.dataset.theme === color);
-            });
-        }
-
-        function setTheme(color) {
-            settings.theme = color;
-            applyTheme(color);
-            saveSettings(true);
-        }
 
         function switchTab(tab) {
             activeTab = tab;
-            document.getElementById('section-watchlist').classList.toggle('hidden', tab !== 'watchlist');
-            document.getElementById('section-releases').classList.toggle('hidden', tab !== 'releases');
-            document.getElementById('tab-watchlist').className = `flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 ${tab === 'watchlist' ? 'tab-active' : 'text-slate-500'}`;
-            document.getElementById('tab-releases').className = `flex-1 py-4 text-sm font-bold transition-all flex items-center justify-center gap-2 ${tab === 'releases' ? 'tab-active' : 'text-slate-500'}`;
-            refreshUI();
-        }
-
-        function updateWatchlistFilter() {
-            watchlistFilterQuery = document.getElementById('watchlistFilterInput').value.toLowerCase();
-            refreshUI();
-        }
-
-        function setWatchlistTypeFilter(type) {
-            watchlistFilterType = type;
-            ['all', 'tv', 'youtube'].forEach(t => {
-                const btn = document.getElementById(`filter-btn-${t}`);
-                if (t === type) {
-                    btn.style.backgroundColor = settings.theme;
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.backgroundColor = 'transparent';
-                    btn.style.color = '#94a3b8';
-                }
+            const sections = ['section-watchlist', 'section-tv', 'section-youtube'];
+            sections.forEach(s => {
+                const el = document.getElementById(s);
+                if (el) el.classList.toggle('hidden', s !== `section-${tab}`);
             });
-            refreshUI();
-        }
-
-        function toggleSearch() { document.getElementById('searchOverlay').classList.toggle('hidden'); }
-        function toggleSettings() { 
-            document.getElementById('settingsOverlay').classList.toggle('hidden'); 
-            document.getElementById('stat-followed').innerText = watchlist.length;
-            document.getElementById('stat-watched').innerText = settings.lifetimeWatched || 0;
-        }
-        function clearSearch() { document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
-
-        function setSearchType(type) {
-            searchType = type;
-            const tvBtn = document.getElementById('searchTypeTV');
-            const ytBtn = document.getElementById('searchTypeYT');
-            if(type === 'tv') {
-                tvBtn.style.backgroundColor = settings.theme; tvBtn.style.color = 'white';
-                ytBtn.style.backgroundColor = 'transparent'; ytBtn.style.color = '#94a3b8';
-            } else {
-                ytBtn.style.backgroundColor = settings.theme; ytBtn.style.color = 'white';
-                tvBtn.style.backgroundColor = 'transparent'; tvBtn.style.color = '#94a3b8';
-            }
-            performSearch(document.getElementById('searchInput').value);
-        }
-
-        function saveSettings(silent = false) {
-            settings.ytApiKey = document.getElementById('ytApiKeyInput').value;
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-            if(!silent) {
-                toggleSettings();
-                showToast("Settings saved");
-                refreshUI();
-            }
-        }
-
-        function exportData() {
-            const dataStr = JSON.stringify({ watchlist, settings });
-            navigator.clipboard.writeText(dataStr).then(() => showToast("Full backup copied!"));
-        }
-
-        function importData() {
-            const input = prompt("Paste your backup code:");
-            if (input) {
-                try {
-                    const parsed = JSON.parse(input);
-                    if (parsed.watchlist) {
-                        watchlist = parsed.watchlist;
-                        settings = { ...settings, ...parsed.settings };
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
-                        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-                        applyTheme(settings.theme);
-                        refreshUI();
-                        showToast("Data restored!");
-                    }
-                } catch(e) { showToast("Invalid backup."); }
-            }
-        }
-
-        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist)); }
-
-        async function performSearch(query) {
-            if (query.length < 2) return;
-            const resultsDiv = document.getElementById('searchResults');
-            resultsDiv.innerHTML = '<div class="flex justify-center p-8"><div class="loader"></div></div>';
-
-            try {
-                if (searchType === 'tv') {
-                    const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`);
-                    const data = await res.json();
-                    resultsDiv.innerHTML = data.map(item => renderSearchResult(item.show, 'tv')).join('');
-                } else {
-                    if (!settings.ytApiKey) {
-                        resultsDiv.innerHTML = '<p class="text-center text-xs text-slate-500">Add an API Key in settings first.</p>';
-                        return;
-                    }
-                    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&key=${settings.ytApiKey}`);
-                    const data = await res.json();
-                    resultsDiv.innerHTML = (data.items || []).map(item => renderSearchResult({
-                        id: item.snippet.channelId,
-                        name: item.snippet.channelTitle,
-                        image: item.snippet.thumbnails.default.url,
-                        status: 'Active'
-                    }, 'youtube')).join('');
-                }
-            } catch (err) { resultsDiv.innerHTML = `<p class="text-center text-red-400 text-xs">Search error.</p>`; }
-            lucide.createIcons();
-        }
-
-        function renderSearchResult(s, type) {
-            const isAdded = watchlist.some(w => w.id === s.id);
-            const showDataStr = JSON.stringify({
-                id: s.id, name: s.name, image: s.image?.medium || s.image, type: type,
-                officialSite: s.officialSite || '', platform: s.network?.name || s.webChannel?.name || 'Streaming'
-            }).replace(/'/g, "&apos;");
             
-            return `
-                <div class="flex gap-4 p-3 glass-card rounded-2xl items-center">
-                    <img src="${s.image?.medium || s.image || 'https://via.placeholder.com/100x150?text=No+Image'}" class="w-14 h-14 ${type === 'youtube' ? 'rounded-full' : 'rounded-lg'} object-cover">
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-slate-100 truncate text-sm">${s.name}</h4>
-                        <p class="text-[10px] text-slate-400 mb-2">${type === 'tv' ? (s.network?.name || s.webChannel?.name || 'Streaming') : 'YouTube Channel'}</p>
-                        <button onclick='toggleFollow(${showDataStr})' 
-                                class="text-[10px] px-4 py-2 rounded-xl transition-all font-bold"
-                                style="background-color: ${isAdded ? '#334155' : settings.theme}; color: ${isAdded ? '#94a3b8' : 'white'}">
-                            ${isAdded ? 'Following' : 'Follow'}
-                        </button>
-                    </div>
-                </div>`;
+            ['watchlist', 'tv', 'youtube'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.className = `relative flex-1 py-4 text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${tab === t ? 'tab-active' : 'text-slate-500'}`;
+            });
+            refreshUI(false); 
         }
 
-        function toggleFollow(data) {
-            const index = watchlist.findIndex(s => s.id === data.id);
-            if (index > -1) { watchlist.splice(index, 1); } 
-            else { watchlist.push({ ...data, lastWatchedAirstamp: 0 }); }
-            saveData(); refreshUI(); performSearch(document.getElementById('searchInput').value);
+        async function syncYouTube() {
+            const syncPrompt = document.getElementById('ytSyncPrompt');
+            if (syncPrompt) syncPrompt.innerHTML = '<div class="loader"></div><p class="mt-4 text-xs text-slate-500">Connecting to YouTube...</p>';
+            await refreshYouTubeData();
+            refreshUI(false);
         }
 
-        async function refreshUI() {
+        function manualTabRefresh() {
+            if (activeTab === 'youtube') syncYouTube();
+            else {
+                showToast("Updating TV Schedules...");
+                refreshTVData().then(() => showToast("Update complete"));
+            }
+        }
+
+        function refreshUI(loadTV = true) {
             const listDiv = document.getElementById('watchlist-content');
-            const queueDiv = document.getElementById('releaseQueue');
-            const emptyState = document.getElementById('emptyState');
+            const tvDiv = document.getElementById('tvQueue');
+            const ytDiv = document.getElementById('ytQueue');
             const badgeWatchlist = document.getElementById('badge-watchlist');
-            const badgeReleases = document.getElementById('badge-releases');
-            const releasesHeader = document.getElementById('releases-header');
+            const badgeTV = document.getElementById('badge-tv');
+            const badgeYT = document.getElementById('badge-yt');
             const filterBar = document.getElementById('watchlistFilterBar');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (badgeWatchlist) badgeWatchlist.innerText = watchlist.length;
+            if (filterBar) filterBar.classList.toggle('hidden', watchlist.length === 0);
+            if (emptyState) emptyState.classList.toggle('hidden', watchlist.length > 0);
 
-            badgeWatchlist.innerText = watchlist.length;
-            if (watchlist.length === 0) {
-                listDiv.innerHTML = ''; emptyState.classList.remove('hidden'); badgeReleases.classList.add('hidden');
-                releasesHeader.classList.add('hidden'); filterBar.classList.add('hidden');
-                return;
+            if (activeTab === 'watchlist' && listDiv) {
+                let tvHtml = '', ytHtml = '';
+                watchlist.forEach(item => {
+                    if (watchlistFilterQuery && !item.name.toLowerCase().includes(watchlistFilterQuery)) return;
+                    const html = renderWatchlistCard(item);
+                    if (item.type === 'tv') tvHtml += html; else ytHtml += html;
+                });
+                listDiv.innerHTML = (tvHtml ? `<div class="section-label">TV Shows</div>${tvHtml}` : '') + (ytHtml ? `<div class="section-label">YouTube</div>${ytHtml}` : '');
             }
 
-            emptyState.classList.add('hidden');
-            filterBar.classList.remove('hidden');
-            
-            let queueItems = [];
-            let tvWatchlistHtml = '';
-            let ytWatchlistHtml = '';
+            if (badgeTV) {
+                badgeTV.innerText = tvQueue.length;
+                badgeTV.classList.toggle('hidden', tvQueue.length === 0);
+            }
+            if (activeTab === 'tv' && tvDiv) {
+                const tvHeader = document.getElementById('tv-header');
+                if (tvHeader) tvHeader.classList.toggle('hidden', tvQueue.length === 0);
+                tvDiv.innerHTML = tvQueue.length ? renderQueue(tvQueue, 'tv') : '<div class="text-center py-20 text-slate-600 text-xs italic">No new episodes.</div>';
+            }
 
-            const nowTime = Date.now();
-            const today = new Date().toDateString();
-            const yesterday = new Date(nowTime - 86400000).toDateString();
-            const oneWeekAgo = nowTime - (7 * 24 * 60 * 60 * 1000);
-
-            for (const item of watchlist) {
-                const matchesQuery = item.name.toLowerCase().includes(watchlistFilterQuery);
-                const matchesType = watchlistFilterType === 'all' || item.type === watchlistFilterType;
+            if (badgeYT) {
+                badgeYT.innerText = ytQueue.length;
+                badgeYT.classList.toggle('hidden', ytQueue.length === 0);
+            }
+            if (activeTab === 'youtube' && ytDiv) {
+                const ytSyncPrompt = document.getElementById('ytSyncPrompt');
+                const ytHeader = document.getElementById('yt-header');
+                const hasResults = ytQueue.length > 0;
                 
+                if (ytSyncPrompt) ytSyncPrompt.classList.toggle('hidden', hasResults);
+                if (ytHeader) ytHeader.classList.toggle('hidden', !hasResults);
+                if (hasResults) ytDiv.innerHTML = renderQueue(ytQueue, 'youtube');
+            }
+            
+            lucide.createIcons();
+            applyTheme(settings.theme);
+        }
+
+        async function refreshTVData() {
+            tvQueue = [];
+            const now = Date.now(), weekAgo = now - 604800000;
+            const tvItems = watchlist.filter(i => i.type === 'tv');
+
+            for (const item of tvItems) {
                 try {
-                    if (item.type === 'youtube') {
-                        if (!settings.ytApiKey) continue;
-                        const res = await fetch(`https://www.googleapis.com/youtube/v3/activities?part=snippet,contentDetails&channelId=${item.id}&maxResults=5&key=${settings.ytApiKey}`);
-                        const data = await res.json();
-                        const uploads = (data.items || []).filter(act => act.snippet.type === 'upload');
+                    const res = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
+                    const eps = await res.json();
+                    if (Array.isArray(eps)) {
+                        // Populate TV Feed
+                        eps.filter(e => {
+                            const t = new Date(e.airstamp).getTime();
+                            return t <= now && t >= weekAgo && t > (item.lastWatchedAirstamp || 0);
+                        }).forEach(e => tvQueue.push({ item, title: `S${e.season}E${e.number}: ${e.name}`, date: e.airstamp, url: item.officialSite || e.url, thumb: item.image }));
                         
+                        // Find the next upcoming episode
+                        const nextEp = eps.find(e => new Date(e.airstamp).getTime() > now);
+                        const newDate = nextEp ? nextEp.airstamp : null;
+                        
+                        // Update and save immediately for each show
+                        if (item.nextAirDate !== newDate) {
+                            item.nextAirDate = newDate;
+                            saveData();
+                        }
+                        // Refresh UI show-by-show so the user sees progress
+                        if (activeTab === 'watchlist' || activeTab === 'tv') refreshUI(false);
+                    }
+                } catch (e) { console.error("TV Fetch Error:", e); }
+            }
+        }
+
+        // Parse ISO 8601 duration (e.g. PT1M30S) to seconds
+        function parseDuration(duration) {
+            const matches = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            const hours = parseInt(matches[1] || 0);
+            const minutes = parseInt(matches[2] || 0);
+            const seconds = parseInt(matches[3] || 0);
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        async function refreshYouTubeData() {
+            ytQueue = [];
+            const now = Date.now(), weekAgo = now - 604800000;
+            const ytItems = watchlist.filter(i => i.type === 'youtube');
+            
+            for (const item of ytItems) {
+                try {
+                    const pref = item.ytPref || 'videos'; 
+                    const res = await fetch(`https://www.googleapis.com/youtube/v3/activities?part=snippet,contentDetails&channelId=${item.id}&maxResults=8&key=${settings.ytApiKey}`);
+                    const data = await res.json();
+                    
+                    if (data && Array.isArray(data.items)) {
+                        const uploads = data.items.filter(v => v.snippet.type === 'upload');
+                        if (uploads.length === 0) continue;
+
+                        const ids = uploads.map(v => v.contentDetails.upload.videoId).join(',');
+                        const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${ids}&key=${settings.ytApiKey}`);
+                        const vData = await vRes.json();
+                        
+                        const videoMetadata = {};
+                        vData.items.forEach(v => {
+                            videoMetadata[v.id] = parseDuration(v.contentDetails.duration);
+                        });
+
                         uploads.forEach(v => {
-                            const pubAt = new Date(v.snippet.publishedAt).getTime();
-                            if (pubAt >= oneWeekAgo && pubAt > (item.lastWatchedAirstamp || 0)) {
-                                queueItems.push({ 
-                                    item, title: v.snippet.title, date: v.snippet.publishedAt, 
-                                    url: `https://www.youtube.com/watch?v=${v.contentDetails.upload.videoId}`,
-                                    platform: 'YouTube',
-                                    thumb: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url
+                            const t = new Date(v.snippet.publishedAt).getTime();
+                            const vidId = v.contentDetails.upload.videoId;
+                            const duration = videoMetadata[vidId] || 0;
+                            const isShort = duration < 120;
+
+                            let shouldInclude = false;
+                            if (pref === 'both') shouldInclude = true;
+                            else if (pref === 'shorts' && isShort) shouldInclude = true;
+                            else if (pref === 'videos' && !isShort) shouldInclude = true;
+
+                            if (shouldInclude && t >= weekAgo && t > (item.lastWatchedAirstamp || 0)) {
+                                ytQueue.push({ 
+                                    item, 
+                                    title: v.snippet.title, 
+                                    date: v.snippet.publishedAt, 
+                                    url: `https://youtube.com/watch?v=${vidId}`, 
+                                    thumb: v.snippet.thumbnails?.medium?.url 
                                 });
                             }
                         });
-                        
-                        if (activeTab === 'watchlist' && matchesQuery && matchesType) {
-                            ytWatchlistHtml += renderWatchlistCard(item, uploads[0] ? uploads[0].snippet.title : 'No videos', 'YouTube');
-                        }
-                    } else {
-                        const epRes = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
-                        const episodes = await epRes.json();
-                        const aired = episodes.filter(ep => new Date(ep.airstamp).getTime() <= nowTime);
-                        const latest = aired[aired.length - 1];
-                        
-                        aired.filter(ep => {
-                            const epTime = new Date(ep.airstamp).getTime();
-                            return epTime >= oneWeekAgo && epTime > (item.lastWatchedAirstamp || 0);
-                        }).forEach(ep => queueItems.push({ 
-                            item, title: `S${ep.season}E${ep.number}: ${ep.name}`, date: ep.airstamp,
-                            url: item.officialSite || ep.url || `https://www.tvmaze.com/shows/${item.id}`,
-                            platform: item.platform || 'TV',
-                            thumb: item.image 
-                        }));
-
-                        if (activeTab === 'watchlist' && matchesQuery && matchesType) {
-                            const nextUp = episodes.find(ep => new Date(ep.airstamp).getTime() > nowTime);
-                            tvWatchlistHtml += renderWatchlistCard(item, latest ? `S${latest.season}E${latest.number}` : 'TBA', 'TV', latest?.airstamp, nextUp?.airstamp);
-                        }
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error("YT Sync Error:", e); }
             }
-
-            globalQueue = queueItems;
-
-            if (activeTab === 'watchlist') {
-                let finalHtml = '';
-                if (tvWatchlistHtml) finalHtml += `<div class="section-label"><i data-lucide="monitor" class="w-3 h-3"></i> TV Shows</div><div class="space-y-2">${tvWatchlistHtml}</div>`;
-                if (ytWatchlistHtml) finalHtml += `<div class="section-label"><i data-lucide="youtube" class="w-3 h-3"></i> YouTube Channels</div><div class="space-y-2">${ytWatchlistHtml}</div>`;
-                if (!tvWatchlistHtml && !ytWatchlistHtml) finalHtml = `<div class="text-center py-10 text-slate-500 text-xs italic">No results for "${watchlistFilterQuery}"</div>`;
-                listDiv.innerHTML = finalHtml;
-            }
-            
-            badgeReleases.innerText = queueItems.length;
-            badgeReleases.classList.toggle('hidden', queueItems.length === 0);
-
-            if (activeTab === 'releases') {
-                releasesHeader.classList.toggle('hidden', queueItems.length === 0);
-                if (queueItems.length === 0) {
-                    queueDiv.innerHTML = '<div class="text-center py-20 text-slate-600 text-sm italic">All caught up! Nothing aired in the last 7 days.</div>';
-                } else {
-                    const sorted = queueItems.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    const groups = { Today: [], Yesterday: [], Earlier: [] };
-                    sorted.forEach(q => {
-                        const ds = new Date(q.date).toDateString();
-                        if (ds === today) groups.Today.push(q);
-                        else if (ds === yesterday) groups.Yesterday.push(q);
-                        else groups.Earlier.push(q);
-                    });
-
-                    let queueHtml = '';
-                    for (const [name, items] of Object.entries(groups)) {
-                        if (items.length > 0) {
-                            queueHtml += `<div class="section-label">${name}</div><div class="space-y-3">`;
-                            items.forEach(q => {
-                                queueHtml += `
-                                <div class="glass-card rounded-3xl overflow-hidden shadow-xl border-l-4 fade-in-list" style="border-left-color: ${q.item.type === 'tv' ? '#ec4899' : '#ef4444'}">
-                                    <div class="flex items-center gap-4 p-3">
-                                        ${q.thumb ? `<img src="${q.thumb}" class="w-20 h-12 object-cover rounded-lg shadow">` : ''}
-                                        <a href="${q.url}" target="_blank" class="flex-1 min-w-0 block active:opacity-60">
-                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                                                ${new Date(q.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
-                                                <span class="bg-slate-800 text-[8px] px-1.5 py-0.5 rounded text-slate-500">${q.platform}</span>
-                                            </p>
-                                            <h4 class="font-bold text-sm truncate text-white">${q.item.name}</h4>
-                                            <p class="text-xs text-slate-400 truncate mt-0.5">${q.title}</p>
-                                        </a>
-                                        <button onclick="markWatched('${q.item.id}', ${new Date(q.date).getTime()})" class="p-3 bg-slate-800 rounded-2xl border border-slate-700 active:scale-90 shadow-lg" style="color: ${settings.theme}">
-                                            <i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i>
-                                        </button>
-                                    </div>
-                                </div>`;
-                            });
-                            queueHtml += `</div>`;
-                        }
-                    }
-                    queueDiv.innerHTML = queueHtml;
-                }
-            }
-            lucide.createIcons();
-            applyTheme(settings.theme); 
         }
 
-        function renderWatchlistCard(item, latestLabel, typeLabel, airstamp, nextAir) {
+        function cycleYtPref(id) {
+            const idx = watchlist.findIndex(i => i.id == id);
+            if (idx === -1) return;
+            const current = watchlist[idx].ytPref || 'videos';
+            const prefs = ['videos', 'shorts', 'both'];
+            const next = prefs[(prefs.indexOf(current) + 1) % prefs.length];
+            watchlist[idx].ytPref = next;
+            saveData(); refreshUI(false);
+            showToast(`Filtering for: ${next}`);
+        }
+
+        function cycleTvApp(id) {
+            const idx = watchlist.findIndex(i => i.id == id);
+            if (idx === -1) return;
+            const currentApp = watchlist[idx].tvApp || 'Default';
+            const appNames = STREAMING_APPS.map(a => a.name);
+            const nextApp = appNames[(appNames.indexOf(currentApp) + 1) % appNames.length];
+            watchlist[idx].tvApp = nextApp;
+            saveData(); refreshUI(false);
+            showToast(`Show set to: ${nextApp}`);
+        }
+
+        // Helper to decide the final click URL based on user preference
+        function getActionUrl(q, type) {
+            if (type === 'youtube') return q.url;
+            
+            const appName = q.item.tvApp || 'Default';
+            if (appName === 'Default') return q.url; // Use original TVMaze/Official link
+            
+            const app = STREAMING_APPS.find(a => a.name === appName);
+            if (app) {
+                // If it's a search-based app, try to append the show name
+                if (app.url.includes('search')) return app.url + encodeURIComponent(q.item.name);
+                return app.url;
+            }
+            return q.url;
+        }
+
+        function renderWatchlistCard(item) {
             const isYT = item.type === 'youtube';
-            return `
-                <div class="flex gap-4 p-4 glass-card rounded-2xl items-center relative fade-in-list">
-                    <img src="${item.image || 'https://via.placeholder.com/100x150?text=No+Image'}" class="w-12 h-12 ${isYT ? 'rounded-full' : 'rounded-lg'} object-cover">
-                    <div class="flex-1 min-w-0">
-                        <h3 class="font-bold text-sm truncate pr-8">${item.name}</h3>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-[9px] font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700" style="color: ${settings.theme}">
-                                Latest: ${latestLabel}
-                            </span>
-                            ${airstamp ? `<button onclick="reAdd('${item.id}', '${airstamp}')" class="text-slate-500 p-1 hover:text-white transition-colors"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>` : ''}
-                        </div>
-                        <div class="flex items-center gap-3 mt-1.5">
-                            ${nextAir ? `<p class="text-[9px] text-slate-500 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Next: ${new Date(nextAir).toLocaleDateString()}</p>` : ''}
-                            <span class="text-[8px] text-slate-600 uppercase font-black tracking-tighter">${item.platform || ''}</span>
-                        </div>
+            const ytPref = item.ytPref || 'videos';
+            const prefLabel = ytPref === 'both' ? 'All Content' : (ytPref === 'shorts' ? 'Shorts Only' : 'Videos Only');
+            
+            const isTV = item.type === 'tv';
+            const tvApp = item.tvApp || 'Default';
+            
+            return `<div class="flex gap-4 p-4 glass-card rounded-2xl items-center relative fade-in-list">
+                <img src="${item.image}" class="w-12 h-12 ${isYT ? 'rounded-full' : 'rounded-lg'} object-cover" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-sm truncate pr-8">${item.name}</h3>
+                    <div class="flex items-center gap-2 mt-1">
+                        <button onclick="reAddLast('${item.id}', '${item.type}')" class="text-slate-500 p-1 hover:text-white transition-colors" title="Re-add last video"><i data-lucide="rotate-ccw" class="w-3 h-3"></i></button>
+                        <span class="text-[8px] text-slate-500 uppercase font-black tracking-widest opacity-50">${item.platform || ''}</span>
+                        
+                        ${isYT ? `<button onclick="cycleYtPref('${item.id}')" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-bold uppercase ml-1 hover:border-purple-500/50">${prefLabel}</button>` : ''}
+                        
+                        ${isTV ? `<button onclick="cycleTvApp('${item.id}')" class="text-[8px] px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-400 font-bold uppercase ml-1 hover:border-purple-500/50 flex items-center gap-1">
+                            <i data-lucide="play" class="w-2 h-2"></i> ${tvApp}
+                        </button>` : ''}
                     </div>
-                    <button onclick="removeManual('${item.id}')" class="absolute top-4 right-4 text-slate-700 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    
+                    ${isTV && item.nextAirDate ? `
+                    <div class="flex items-center gap-1 mt-1.5 text-[9px] text-purple-400 font-bold">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        Next: ${new Date(item.nextAirDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
+                    </div>` : ''}
+                </div>
+                <button onclick="removeManual('${item.id}')" class="absolute top-4 right-4 text-slate-700 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>`;
+        }
+
+        function renderQueue(items, type) {
+            return items.sort((a,b) => new Date(b.date) - new Date(a.date)).map(q => {
+                const finalUrl = getActionUrl(q, type);
+                return `
+                <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
+                    <div class="flex items-center gap-4 p-3">
+                        <img src="${q.thumb}" class="w-20 h-12 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
+                        <a href="${finalUrl}" target="_blank" class="flex-1 min-w-0 block active:opacity-70">
+                            <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${type === 'tv' ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
+                            <h4 class="font-bold text-sm truncate text-white">${q.item.name}</h4>
+                            <p class="text-[10px] text-slate-400 truncate">${q.title}</p>
+                        </a>
+                        <button onclick="markWatched('${q.item.id}', ${new Date(q.date).getTime()})" class="p-3 bg-slate-800 rounded-2xl active:scale-90 transition-transform"><i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i></button>
+                    </div>
                 </div>`;
+            }).join('');
+        }
+
+        async function reAddLast(id, type) {
+            const item = watchlist.find(i => i.id == id);
+            if (!item) return;
+            try {
+                if (type === 'tv') {
+                    const res = await fetch(`https://api.tvmaze.com/shows/${id}/episodes`);
+                    const eps = await res.json();
+                    const aired = eps.filter(e => new Date(e.airstamp) <= new Date());
+                    if (aired.length) {
+                        const lastTime = new Date(aired[aired.length - 1].airstamp).getTime();
+                        item.lastWatchedAirstamp = lastTime - 1;
+                    }
+                } else {
+                    const res = await fetch(`https://www.googleapis.com/youtube/v3/activities?part=snippet,contentDetails&channelId=${id}&maxResults=1&key=${settings.ytApiKey}`);
+                    const data = await res.json();
+                    if (data && data.items?.[0]) {
+                        const lastTime = new Date(data.items[0].snippet.publishedAt).getTime();
+                        item.lastWatchedAirstamp = lastTime - 1;
+                    }
+                }
+                saveData(); showToast("Re-added to feed");
+                if (type === 'tv') refreshTVData();
+                else refreshYouTubeData().then(() => refreshUI(false));
+            } catch(e) { showToast("Failed to re-add."); }
         }
 
         function markWatched(id, time) {
             const idx = watchlist.findIndex(s => s.id == id);
             if (idx > -1) { 
                 watchlist[idx].lastWatchedAirstamp = Math.max(watchlist[idx].lastWatchedAirstamp || 0, time); 
-                settings.lifetimeWatched = (settings.lifetimeWatched || 0) + 1;
-                saveData(); saveSettings(true); refreshUI(); showToast("Watched!"); 
+                settings.lifetimeWatched++; 
+                saveData(); saveSettings(true); refreshUI(false); 
+                showToast("Watched!");
             }
         }
 
-        function markAllWatched() {
-            if (globalQueue.length === 0) return;
-            globalQueue.forEach(q => {
-                const idx = watchlist.findIndex(s => s.id == q.item.id);
-                if (idx > -1) {
-                    const time = new Date(q.date).getTime();
-                    watchlist[idx].lastWatchedAirstamp = Math.max(watchlist[idx].lastWatchedAirstamp || 0, time);
-                }
+        function markAllTypeWatched(type) {
+            const queue = type === 'tv' ? tvQueue : ytQueue;
+            queue.forEach(q => {
+                const item = watchlist.find(i => i.id == q.item.id);
+                if (item) item.lastWatchedAirstamp = Math.max(item.lastWatchedAirstamp || 0, new Date(q.date).getTime());
             });
-            settings.lifetimeWatched = (settings.lifetimeWatched || 0) + globalQueue.length;
-            saveData(); saveSettings(true); refreshUI(); showToast(`Marked ${globalQueue.length} as watched!`);
+            settings.lifetimeWatched += queue.length;
+            saveData(); saveSettings(true); refreshUI(false);
+            showToast(`Cleared ${queue.length} items`);
         }
 
-        function reAdd(id, time) {
-            const idx = watchlist.findIndex(s => s.id == id);
-            if (idx > -1) { watchlist[idx].lastWatchedAirstamp = new Date(time).getTime() - 1; saveData(); refreshUI(); }
+        function applyTheme(c) { 
+            const color = c || '#8b5cf6';
+            document.documentElement.style.setProperty('--brand-primary', color); 
+            document.querySelectorAll('.theme-dot').forEach(d => d.classList.toggle('active', d.dataset.theme === color));
+            const activeTabEl = document.querySelector('.tab-active');
+            if (activeTabEl) { activeTabEl.style.color = color; activeTabEl.style.borderBottomColor = color; }
+            document.querySelectorAll('.bg-purple-600').forEach(b => b.style.backgroundColor = color);
         }
-
-        function removeManual(id) { 
-            if(confirm("Unfollow this item?")) { 
-                watchlist = watchlist.filter(s => s.id != id); 
-                saveData(); 
-                refreshUI(); 
+        function setTheme(c) { settings.theme = c; applyTheme(c); saveSettings(true); }
+        function toggleSearch() { document.getElementById('searchOverlay').classList.toggle('hidden'); }
+        function toggleSettings() { 
+            document.getElementById('settingsOverlay').classList.toggle('hidden'); 
+            const fld = document.getElementById('stat-followed');
+            const wtd = document.getElementById('stat-watched');
+            if (fld) fld.innerText = watchlist.length; 
+            if (wtd) wtd.innerText = settings.lifetimeWatched || 0; 
+        }
+        function clearSearch() { document.getElementById('searchInput').value = ''; document.getElementById('searchResults').innerHTML = ''; }
+        function updateWatchlistFilter() { 
+            const input = document.getElementById('watchlistFilterInput');
+            watchlistFilterQuery = input ? input.value.toLowerCase() : ''; 
+            refreshUI(false); 
+        }
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist)); }
+        function saveSettings(silent) { 
+            const input = document.getElementById('ytApiKeyInput');
+            if (input) settings.ytApiKey = input.value;
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); 
+            if(!silent) { toggleSettings(); refreshUI(true); } 
+        }
+        function showToast(m) { 
+            const t = document.getElementById('toast'); 
+            const msg = document.getElementById('toastMessage');
+            if (t && msg) {
+                msg.innerText = m; 
+                t.classList.remove('opacity-0', 'pointer-events-none'); 
+                t.classList.add('translate-y-[-10px]');
+                setTimeout(() => {
+                    t.classList.add('opacity-0', 'pointer-events-none');
+                    t.classList.remove('translate-y-[-10px]');
+                }, 2000); 
             }
         }
-        
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toastMessage').innerText = msg;
-            t.classList.remove('opacity-0', 'pointer-events-none');
-            t.classList.add('translate-y-[-10px]');
-            setTimeout(() => {
-                t.classList.add('opacity-0', 'pointer-events-none');
-                t.classList.remove('translate-y-[-10px]');
-            }, 2500);
+        function removeManual(id) { if(confirm("Unfollow?")) { watchlist = watchlist.filter(s => s.id != id); saveData(); refreshUI(true); } }
+
+        async function performSearch(q) {
+            if (q.length < 2) return;
+            const resDiv = document.getElementById('searchResults');
+            if (!resDiv) return;
+            resDiv.innerHTML = '<div class="flex justify-center p-8"><div class="loader"></div></div>';
+            try {
+                if (searchType === 'tv') {
+                    const r = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
+                    const d = await r.json();
+                    resDiv.innerHTML = d.length ? d.map(i => renderSearchResult(i.show, 'tv')).join('') : '<p class="text-center text-xs text-slate-500">No shows found.</p>';
+                } else {
+                    if (!settings.ytApiKey) {
+                        resDiv.innerHTML = '<p class="text-center text-xs text-red-400 p-4">Please add a YouTube API Key in settings first.</p>';
+                        return;
+                    }
+                    const r = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(q)}&key=${settings.ytApiKey}`);
+                    const d = await r.json();
+                    if (d.error) throw new Error(d.error.message);
+                    resDiv.innerHTML = d.items?.length ? d.items.map(i => renderSearchResult({id: i.snippet.channelId, name: i.snippet.channelTitle, image: i.snippet.thumbnails.default.url}, 'youtube')).join('') : '<p class="text-center text-xs text-slate-500">No channels found.</p>';
+                }
+            } catch (e) { resDiv.innerHTML = `<p class="text-center text-xs text-red-400 p-4">${e.message || 'Search error'}</p>`; }
+            lucide.createIcons();
+        }
+
+        function renderSearchResult(s, type) {
+            const isAdded = watchlist.some(w => w.id == s.id);
+            const dataStr = JSON.stringify({id: s.id, name: s.name, image: s.image?.medium || s.image || '', type: type, officialSite: s.officialSite || '', platform: s.network?.name || s.webChannel?.name || 'Streaming'}).replace(/'/g, "&apos;");
+            return `<div class="flex gap-4 p-3 glass-card rounded-2xl items-center">
+                <img src="${s.image?.medium || s.image || 'https://via.placeholder.com/100x150?text=No+Img'}" class="w-12 h-16 rounded-lg object-cover" onerror="this.src='https://via.placeholder.com/100x150?text=No+Img'">
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-sm truncate">${s.name}</h4>
+                    <button onclick='toggleFollow(${dataStr})' class="text-[10px] px-3 py-1.5 rounded-lg mt-2 font-bold transition-all" style="background-color: ${isAdded ? '#334155' : settings.theme}; color: ${isAdded ? '#94a3b8' : 'white'}">${isAdded ? 'Following' : 'Follow'}</button>
+                </div>
+            </div>`;
+        }
+
+        function toggleFollow(d) {
+            const idx = watchlist.findIndex(s => s.id == d.id);
+            if (idx > -1) {
+                watchlist.splice(idx, 1);
+            } else {
+                watchlist.push({ ...d, lastWatchedAirstamp: 0, ytPref: 'videos', tvApp: 'Default' });
+                // Trigger an immediate date fetch for just this new show
+                refreshTVData();
+            }
+            saveData(); refreshUI(false); 
+            performSearch(document.getElementById('searchInput').value);
+        }
+
+        function setSearchType(t) { 
+            searchType = t; 
+            const btnTV = document.getElementById('searchTypeTV');
+            const btnYT = document.getElementById('searchTypeYT');
+            if (btnTV) btnTV.className = `flex-1 py-2 text-xs font-bold rounded-lg ${t === 'tv' ? 'search-type-active' : 'text-slate-400'}`; 
+            if (btnYT) btnYT.className = `flex-1 py-2 text-xs font-bold rounded-lg ${t === 'youtube' ? 'search-type-active' : 'text-slate-400'}`; 
+            performSearch(document.getElementById('searchInput').value); 
+        }
+        function exportData() { navigator.clipboard.writeText(JSON.stringify({watchlist, settings})); showToast("Exported to clipboard!"); }
+        function importData() { 
+            const p = prompt("Paste data:"); 
+            if(p) { 
+                try {
+                    const d = JSON.parse(p); 
+                    watchlist = d.watchlist || []; settings = d.settings || settings; 
+                    saveData(); saveSettings(true); refreshUI(true); 
+                } catch(e) { showToast("Invalid data."); }
+            } 
         }
     </script>
 </body>
