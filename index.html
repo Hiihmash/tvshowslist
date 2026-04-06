@@ -238,17 +238,16 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
-        // Updated to simple URI schemes to launch apps directly without ghost tabs
         const STREAMING_APPS = [
-            { name: 'Default', url: '' },
-            { name: 'Netflix', url: 'nflx://' },
-            { name: 'Disney+', url: 'disneyplus://' },
-            { name: 'Paramount+', url: 'paramountplus://' },
-            { name: 'Prime Video', url: 'primevideo://' },
-            { name: 'Peacock', url: 'peacock://' },
-            { name: 'Discovery+', url: 'discoveryplus://' },
-            { name: 'PBS', url: 'pbsvideo://' },
-			{ name: 'Hallmark+', url: 'hallmarkplus://' }
+            { name: 'Default', url: '', scheme: '' },
+            { name: 'Netflix', url: 'https://www.netflix.com', scheme: 'nflx://' },
+            { name: 'Disney+', url: 'https://www.disneyplus.com', scheme: 'disneyplus://' },
+            { name: 'Paramount+', url: 'https://www.paramountplus.com', scheme: 'paramountplus://' },
+            { name: 'Prime Video', url: 'https://www.amazon.com/video', scheme: 'primevideo://' },
+            { name: 'Peacock', url: 'https://www.peacocktv.com', scheme: 'peacock://' },
+            { name: 'Discovery+', url: 'https://www.discoveryplus.com', scheme: 'discoveryplus://' },
+            { name: 'PBS', url: 'https://www.pbs.org', scheme: 'pbsvideo://' },
+			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com', scheme: 'hallmarkplus://' }
         ];
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null;
@@ -500,15 +499,31 @@
             closeAppSelector();
         }
 
-        function getActionUrl(q, type) {
-            if (type === 'youtube') return q.url;
-            const appName = q.item.tvApp || 'Default';
-            if (appName === 'Default') return q.url; 
-            const app = STREAMING_APPS.find(a => a.name === appName);
-            if (app) {
-                return app.url; // Use custom URI scheme directly
+        // New function to handle app launching specifically for PWA Standalone
+        function launchApp(appId, originalUrl) {
+            const item = watchlist.find(i => i.id == appId);
+            const appName = item ? (item.tvApp || 'Default') : 'Default';
+            
+            if (appName === 'Default') {
+                window.open(originalUrl, '_blank');
+                return;
             }
-            return q.url;
+
+            const app = STREAMING_APPS.find(a => a.name === appName);
+            if (app && app.scheme) {
+                // We use location.assign which is better at triggering system intents in PWAs
+                // compared to standard <a> tags which might stay inside the PWA container.
+                window.location.assign(app.scheme);
+                
+                // Fallback to website if app doesn't open after 2 seconds
+                setTimeout(() => {
+                    if (document.visibilityState === 'visible') {
+                        window.open(app.url, '_blank');
+                    }
+                }, 2000);
+            } else {
+                window.open(originalUrl, '_blank');
+            }
         }
 
         function renderWatchlistCard(item) {
@@ -518,7 +533,7 @@
             const isTV = item.type === 'tv';
             const tvApp = item.tvApp || 'Default';
             const themeColor = settings.theme || '#8b5cf6';
-            const themeBg = themeColor + '33'; // 20% alpha hex
+            const themeBg = themeColor + '33'; 
             
             return `<div class="flex gap-4 p-4 glass-card rounded-2xl items-center relative fade-in-list">
                 <img src="${item.image}" class="w-12 h-12 ${isYT ? 'rounded-full' : 'rounded-lg'} object-cover" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
@@ -544,18 +559,16 @@
 
         function renderQueue(items, type) {
             return items.sort((a,b) => new Date(b.date) - new Date(a.date)).map(q => {
-                const finalUrl = getActionUrl(q, type);
-                // TV app links now use _self to prevent black screen ghost tabs
-                const target = type === 'youtube' ? '_blank' : '_self';
+                const isTv = type === 'tv';
                 return `
-                <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
+                <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${isTv ? '#ec4899' : '#ef4444'}">
                     <div class="flex items-center gap-4 p-3">
                         <img src="${q.thumb}" class="w-20 h-12 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
-                        <a href="${finalUrl}" target="${target}" class="flex-1 min-w-0 block active:opacity-70">
-                            <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${type === 'tv' ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
+                        <div onclick="${isTv ? `launchApp('${q.item.id}', '${q.url}')` : `window.open('${q.url}', '_blank')`}" class="flex-1 min-w-0 block active:opacity-70 cursor-pointer">
+                            <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${isTv ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
                             <h4 class="font-bold text-sm truncate text-white">${q.item.name}</h4>
                             <p class="text-[10px] text-slate-400 truncate">${q.title}</p>
-                        </a>
+                        </div>
                         <button onclick="markWatched('${q.item.id}', ${new Date(q.date).getTime()})" class="p-3 bg-slate-800 rounded-2xl active:scale-90 transition-transform"><i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i></button>
                     </div>
                 </div>`;
@@ -646,7 +659,7 @@
             const readdAllBtn = document.getElementById('btn-readd-all');
             if (readdAllBtn) {
                 readdAllBtn.style.color = color;
-                readdAllBtn.style.backgroundColor = color + '1A'; // 10% alpha
+                readdAllBtn.style.backgroundColor = color + '1A'; 
             }
 
             const markAllTvBtn = document.getElementById('btn-mark-all-tv');
