@@ -214,7 +214,7 @@
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">TV Feed</p>
                 <button id="btn-mark-all-tv" onclick="markAllTypeWatched('tv')" class="text-[10px] font-bold px-3 py-1 rounded-full">Mark All Watched</button>
             </div>
-            <div id="tvQueue" class="space-y-6"></div>
+            <div id="tvQueue" class="flex flex-col gap-4"></div>
         </section>
 
         <!-- YouTube Releases Section -->
@@ -228,7 +228,7 @@
                 <p class="text-sm text-slate-500 mb-6">Sync YouTube to check for new videos.<br><span class="text-[10px] opacity-50">(Uses API Quota)</span></p>
                 <button onclick="syncYouTube()" class="bg-red-600 hover:bg-red-500 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95">Sync Subscriptions</button>
             </div>
-            <div id="ytQueue" class="space-y-6"></div>
+            <div id="ytQueue" class="flex flex-col gap-4"></div>
         </section>
     </main>
 
@@ -238,8 +238,6 @@
         const STORAGE_KEY = 'showtrack_v3_data';
         const SETTINGS_KEY = 'showtrack_settings';
         
-        // Reverted to standard HTTPS URLs for stability.
-        // If the native app is installed, the phone will offer to open it automatically.
         const STREAMING_APPS = [
             { name: 'Default', url: '' },
             { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
@@ -558,21 +556,49 @@
         }
 
         function renderQueue(items, type) {
-            return items.sort((a,b) => new Date(b.date) - new Date(a.date)).map(q => {
-                const isTv = type === 'tv';
-                return `
-                <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${isTv ? '#ec4899' : '#ef4444'}">
+            const sortedItems = items.sort((a,b) => new Date(b.date) - new Date(a.date));
+            let html = '';
+            let currentGroup = '';
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const yesterday = today - 86400000;
+            const last7 = today - (7 * 86400000);
+            const last14 = today - (14 * 86400000);
+
+            sortedItems.forEach((q, index) => {
+                if (type === 'tv') {
+                    let group = '';
+                    const qTime = new Date(q.date).getTime();
+                    
+                    if (qTime >= today) group = 'Today';
+                    else if (qTime >= yesterday) group = 'Yesterday';
+                    else if (qTime >= last7) group = 'Last 7 Days';
+                    else if (qTime >= last14) group = 'Last 14 Days';
+                    else group = 'Last 30+ Days';
+
+                    if (group !== currentGroup) {
+                        const mtClass = index === 0 ? '' : 'mt-6';
+                        html += `<div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ${mtClass} ml-1 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3 h-3"></i> ${group}</div>`;
+                        currentGroup = group;
+                    }
+                }
+                
+                html += `
+                <div class="glass-card rounded-3xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
                     <div class="flex items-center gap-4 p-3">
                         <img src="${q.thumb}" class="w-20 h-12 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/100?text=No+Img'">
-                        <div onclick="${isTv ? `launchApp('${q.item.id}', '${q.url}')` : `window.open('${q.url}', '_blank')`}" class="flex-1 min-w-0 block active:opacity-70 cursor-pointer">
-                            <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${isTv ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
+                        <div onclick="${type === 'tv' ? `launchApp('${q.item.id}', '${q.url}')` : `window.open('${q.url}', '_blank')`}" class="flex-1 min-w-0 block active:opacity-70 cursor-pointer">
+                            <p class="text-[8px] text-slate-500 uppercase font-bold tracking-tighter mb-0.5">${type === 'tv' ? (q.item.tvApp || 'TV') : 'YouTube'}</p>
                             <h4 class="font-bold text-sm truncate text-white">${q.item.name}</h4>
                             <p class="text-[10px] text-slate-400 truncate">${q.title}</p>
                         </div>
                         <button onclick="markWatched('${q.item.id}', ${new Date(q.date).getTime()})" class="p-3 bg-slate-800 rounded-2xl active:scale-90 transition-transform"><i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i></button>
                     </div>
                 </div>`;
-            }).join('');
+            });
+
+            return html;
         }
 
         async function reAddLast(id, type) {
