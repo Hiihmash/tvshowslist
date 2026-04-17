@@ -239,15 +239,15 @@
         const SETTINGS_KEY = 'showtrack_settings';
         
         const STREAMING_APPS = [
-            { name: 'Default', url: '' },
-            { name: 'Netflix', url: 'https://www.netflix.com/search?q=' },
-            { name: 'Disney+', url: 'https://www.disneyplus.com' },
-            { name: 'Paramount+', url: 'https://www.paramountplus.com' },
-            { name: 'Prime Video', url: 'https://www.amazon.com/gp/video/storefront' },
-            { name: 'Peacock', url: 'https://www.peacocktv.com' },
-            { name: 'Discovery+', url: 'https://www.discoveryplus.com/' },
-            { name: 'PBS', url: 'https://www.pbs.org/' },
-			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com/' }
+            { name: 'Default', url: '', scheme: '' },
+            { name: 'Netflix', url: 'https://www.netflix.com', scheme: 'nflx://' },
+            { name: 'Disney+', url: 'https://www.disneyplus.com', scheme: 'disneyplus://' },
+            { name: 'Paramount+', url: 'https://www.paramountplus.com', scheme: 'paramountplus://' },
+            { name: 'Prime Video', url: 'https://www.amazon.com/video', scheme: 'primevideo://' },
+            { name: 'Peacock', url: 'https://www.peacocktv.com', scheme: 'peacock://' },
+            { name: 'Discovery+', url: 'https://www.discoveryplus.com', scheme: 'discoveryplus://' },
+            { name: 'PBS', url: 'https://www.pbs.org', scheme: 'pbsvideo://' },
+			{ name: 'Hallmark+', url: 'https://www.hallmarkplus.com', scheme: 'hallmarkplus://' }
         ];
 
         let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null;
@@ -365,20 +365,24 @@
         }
 
         async function refreshTVData() {
-            tvQueue = [];
             const now = Date.now();
             const historyLimit = now - (settings.feedDays * 86400000);
             const tvItems = watchlist.filter(i => i.type === 'tv');
+            
+            let tempQueue = [];
+            let dataChanged = false;
 
             for (const item of tvItems) {
                 try {
                     const res = await fetch(`https://api.tvmaze.com/shows/${item.id}/episodes`);
+                    if (!res.ok) continue; // Handle potential API rate limits gracefully
                     const eps = await res.json();
+                    
                     if (Array.isArray(eps)) {
                         eps.filter(e => {
                             const t = new Date(e.airstamp).getTime();
                             return t <= now && t >= historyLimit && t > (item.lastWatchedAirstamp || 0);
-                        }).forEach(e => tvQueue.push({ item, title: `S${e.season}E${e.number}: ${e.name}`, date: e.airstamp, url: item.officialSite || e.url, thumb: item.image }));
+                        }).forEach(e => tempQueue.push({ item, title: `S${e.season}E${e.number}: ${e.name}`, date: e.airstamp, url: item.officialSite || e.url, thumb: item.image }));
                         
                         const nextEp = eps.find(e => new Date(e.airstamp).getTime() > now);
                         const newDate = nextEp ? nextEp.airstamp : null;
@@ -387,12 +391,16 @@
                         if (item.nextAirDate !== newDate || item.nextEpInfo !== newInfo) {
                             item.nextAirDate = newDate;
                             item.nextEpInfo = newInfo;
-                            saveData();
+                            dataChanged = true;
                         }
-                        if (activeTab === 'watchlist' || activeTab === 'tv') refreshUI(false);
                     }
                 } catch (e) { console.error("TV Fetch Error:", e); }
             }
+            
+            // Only update the global queue and redraw when EVERYTHING has finished fetching
+            tvQueue = tempQueue;
+            if (dataChanged) saveData();
+            if (activeTab === 'watchlist' || activeTab === 'tv') refreshUI(false);
         }
 
         function parseDuration(duration) {
@@ -404,10 +412,10 @@
         }
 
         async function refreshYouTubeData() {
-            ytQueue = [];
             const now = Date.now();
             const historyLimit = now - (settings.feedDays * 86400000);
             const ytItems = watchlist.filter(i => i.type === 'youtube');
+            let tempQueue = [];
             
             for (const item of ytItems) {
                 try {
@@ -440,7 +448,7 @@
                             else if (pref === 'videos' && !isShort) shouldInclude = true;
 
                             if (shouldInclude && t >= historyLimit && t > (item.lastWatchedAirstamp || 0)) {
-                                ytQueue.push({ 
+                                tempQueue.push({ 
                                     item, 
                                     title: v.snippet.title, 
                                     date: v.snippet.publishedAt, 
@@ -452,6 +460,7 @@
                     }
                 } catch (e) { console.error("YT Sync Error:", e); }
             }
+            ytQueue = tempQueue;
         }
 
         function cycleYtPref(id) {
@@ -499,9 +508,17 @@
             closeAppSelector();
         }
 
-        /**
-         * Launch a native app or website using standard HTTPS URLs.
-         */
+        function getActionUrl(q, type) {
+            if (type === 'youtube') return q.url;
+            const appName = q.item.tvApp || 'Default';
+            if (appName === 'Default') return q.url; 
+            const app = STREAMING_APPS.find(a => a.name === appName);
+            if (app && app.scheme) {
+                return app.scheme; 
+            }
+            return q.url;
+        }
+
         function launchApp(appId, originalUrl) {
             const item = watchlist.find(i => i.id == appId);
             const appName = item ? (item.tvApp || 'Default') : 'Default';
@@ -512,13 +529,8 @@
             }
 
             const app = STREAMING_APPS.find(a => a.name === appName);
-            if (app && app.url) {
-                let finalUrl = app.url;
-                // If it's a search URL, append the show name for convenience
-                if (finalUrl.includes('search') || finalUrl.includes('?q=')) {
-                    finalUrl += encodeURIComponent(item.name);
-                }
-                window.open(finalUrl, '_blank');
+            if (app && app.scheme) {
+                window.location.href = app.scheme;
             } else {
                 window.open(originalUrl, '_blank');
             }
@@ -658,6 +670,11 @@
             if (idx > -1) { 
                 watchlist[idx].lastWatchedAirstamp = Math.max(watchlist[idx].lastWatchedAirstamp || 0, time); 
                 settings.lifetimeWatched++; 
+                
+                // Immediately update local arrays for instant UI response (no flicker)
+                tvQueue = tvQueue.filter(q => !(q.item.id == id && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
+                ytQueue = ytQueue.filter(q => !(q.item.id == id && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
+
                 saveData(); saveSettings(true); refreshUI(false); 
                 showToast("Watched!");
             }
@@ -670,6 +687,11 @@
                 if (item) item.lastWatchedAirstamp = Math.max(item.lastWatchedAirstamp || 0, new Date(q.date).getTime());
             });
             settings.lifetimeWatched += queue.length;
+            
+            // Instantly clear the local queue arrays
+            if (type === 'tv') tvQueue = [];
+            if (type === 'youtube') ytQueue = [];
+
             saveData(); saveSettings(true); refreshUI(false);
             showToast(`Cleared ${queue.length} items`);
         }
