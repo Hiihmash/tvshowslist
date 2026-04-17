@@ -398,7 +398,8 @@
             }
             
             // Only update the global queue and redraw when EVERYTHING has finished fetching
-            tvQueue = tempQueue;
+            // Added filter to prevent race condition if a user clicked "Watched" during the background fetch
+            tvQueue = tempQueue.filter(q => new Date(q.date).getTime() > (q.item.lastWatchedAirstamp || 0));
             if (dataChanged) saveData();
             if (activeTab === 'watchlist' || activeTab === 'tv') refreshUI(false);
         }
@@ -460,7 +461,9 @@
                     }
                 } catch (e) { console.error("YT Sync Error:", e); }
             }
-            ytQueue = tempQueue;
+            
+            // Added filter to prevent race condition if a user clicked "Watched" during the background fetch
+            ytQueue = tempQueue.filter(q => new Date(q.date).getTime() > (q.item.lastWatchedAirstamp || 0));
         }
 
         function cycleYtPref(id) {
@@ -672,8 +675,9 @@
                 settings.lifetimeWatched++; 
                 
                 // Immediately update local arrays for instant UI response (no flicker)
-                tvQueue = tvQueue.filter(q => !(q.item.id == id && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
-                ytQueue = ytQueue.filter(q => !(q.item.id == id && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
+                // Enforced strict String() conversion to guarantee the IDs match and remove instantly
+                tvQueue = tvQueue.filter(q => !(String(q.item.id) === String(id) && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
+                ytQueue = ytQueue.filter(q => !(String(q.item.id) === String(id) && new Date(q.date).getTime() <= watchlist[idx].lastWatchedAirstamp));
 
                 saveData(); saveSettings(true); refreshUI(false); 
                 showToast("Watched!");
