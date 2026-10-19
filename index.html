@@ -1148,13 +1148,14 @@
             lucide.createIcons();
         }
 
-        function renderSearchResult(s, type) {
+		function renderSearchResult(s, type) {
             const isAdded = watchlist.some(w => String(w.id) === String(s.id));
             const themeColor = settings.theme || '#8b5cf6';
             const imgUrl = s.image?.medium || s.image || FALLBACK_IMG;
             const platform = s.network?.name || s.webChannel?.name || (type === 'youtube' ? 'YouTube' : 'Streaming');
             const status = s.status || 'Running';
 
+            // Safely encode JSON payload to prevent special characters/apostrophes from breaking clicks
             const payload = encodeURIComponent(JSON.stringify({
                 id: s.id,
                 name: s.name,
