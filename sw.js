@@ -1,4 +1,4 @@
-const cacheName = 'showtrack-v4.2';
+const cacheName = 'showtrack-v5.0';
 const assets = [
     './',
     './index.html',
@@ -25,11 +25,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
     const url = new URL(e.request.url);
 
-    // Never cache API calls
+    // Never cache external API calls
     if (
         url.hostname.includes('tvmaze.com') ||
         url.hostname.includes('googleapis.com') ||
-        url.hostname.includes('itunes.apple.com')
+        url.hostname.includes('itunes.apple.com') ||
+        url.hostname.includes('api.github.com')
     ) {
         return;
     }
