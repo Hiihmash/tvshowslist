@@ -1,4 +1,4 @@
-const cacheName = 'showtrack-v4.1';
+const cacheName = 'showtrack-v4.2';
 const assets = [
     './',
     './index.html',
@@ -25,12 +25,15 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
     const url = new URL(e.request.url);
 
-    // Never cache API calls — always go straight to network
-    if (url.hostname.includes('tvmaze.com') || url.hostname.includes('googleapis.com')) {
+    // Never cache API calls
+    if (
+        url.hostname.includes('tvmaze.com') ||
+        url.hostname.includes('googleapis.com') ||
+        url.hostname.includes('itunes.apple.com')
+    ) {
         return;
     }
 
-    // Network-first for HTML, Cache-first for static assets
     if (e.request.mode === 'navigate') {
         e.respondWith(
             fetch(e.request).catch(() => caches.match('./index.html'))
