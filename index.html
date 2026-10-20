@@ -51,7 +51,6 @@
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .spin-anim { animation: spin 0.8s linear infinite; }
 
         .tab-active {
@@ -108,8 +107,9 @@
             <button onclick="toggleSearch()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Search & Add">
                 <i data-lucide="plus" class="w-6 h-6"></i>
             </button>
-            <button onclick="toggleSettings()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Settings">
+            <button onclick="toggleSettings()" class="relative p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Settings & Subscriptions">
                 <i data-lucide="settings" class="w-5 h-5"></i>
+                <span id="subAlertDot" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-slate-900 animate-pulse"></span>
             </button>
         </div>
     </header>
@@ -151,7 +151,7 @@
         <div id="searchResults" class="flex-1 overflow-y-auto space-y-3 no-scrollbar"></div>
     </div>
 
-    <!-- App Selector Overlay (For Watchlist / Catalog Reassignment) -->
+    <!-- App Selector Overlay -->
     <div id="appSelectorOverlay" class="fixed inset-0 z-[70] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center" onclick="if(event.target===this) closeAppSelector()">
         <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative">
             <button onclick="closeAppSelector()" class="absolute top-4 right-4 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -160,9 +160,9 @@
         </div>
     </div>
 
-    <!-- Quick Catalog Add / Edit Modal -->
-    <div id="catalogModalOverlay" class="fixed inset-0 z-[75] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center" onclick="if(event.target===this) closeCatalogModal()">
-        <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative space-y-4">
+    <!-- Quick Catalog Add / Edit Modal (With Dropped Status, Ratings & Notes) -->
+    <div id="catalogModalOverlay" class="fixed inset-0 z-[75] bg-slate-950/90 hidden p-5 flex flex-col justify-center items-center" onclick="if(event.target===this) closeCatalogModal()">
+        <div class="glass-card w-full max-w-sm rounded-3xl p-5 relative space-y-3.5 max-h-[92vh] overflow-y-auto no-scrollbar">
             <button onclick="closeCatalogModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="flex gap-3 items-center pr-6">
                 <img id="catModalImg" src="" class="w-12 h-16 object-cover rounded-xl bg-slate-800 shrink-0">
@@ -173,23 +173,134 @@
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">1. Status</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="catStatusWatchedBtn" onclick="setCatModalStatus('watched')" class="py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all">
-                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Already Watched
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">1. Watch Status</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button id="catStatusWatchedBtn" onclick="setCatModalStatus('watched')" class="py-2 px-2 rounded-xl text-[11px] font-bold border flex flex-col items-center justify-center gap-1 transition-all">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Watched
                     </button>
-                    <button id="catStatusWantBtn" onclick="setCatModalStatus('want')" class="py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all">
-                        <i data-lucide="clock" class="w-4 h-4"></i> Want to Watch
+                    <button id="catStatusWantBtn" onclick="setCatModalStatus('want')" class="py-2 px-2 rounded-xl text-[11px] font-bold border flex flex-col items-center justify-center gap-1 transition-all">
+                        <i data-lucide="clock" class="w-4 h-4"></i> Want
+                    </button>
+                    <button id="catStatusDroppedBtn" onclick="setCatModalStatus('dropped')" class="py-2 px-2 rounded-xl text-[11px] font-bold border flex flex-col items-center justify-center gap-1 transition-all">
+                        <i data-lucide="ban" class="w-4 h-4"></i> Dropped
                     </button>
                 </div>
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">2. Streaming App</label>
-                <div id="catModalAppGrid" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto no-scrollbar"></div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">2. Quick Verdict (Optional)</label>
+                <div class="grid grid-cols-4 gap-1.5" id="catRatingGrid">
+                    <button onclick="setCatModalRating('⭐ Must Watch')" data-rating="⭐ Must Watch" class="cat-rate-btn py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300">⭐ Great</button>
+                    <button onclick="setCatModalRating('👍 Liked')" data-rating="👍 Liked" class="cat-rate-btn py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300">👍 Good</button>
+                    <button onclick="setCatModalRating('😐 Meh')" data-rating="😐 Meh" class="cat-rate-btn py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300">😐 Meh</button>
+                    <button onclick="setCatModalRating('👎 Skip')" data-rating="👎 Skip" class="cat-rate-btn py-1.5 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300">👎 Bad</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">3. Personal Note (Optional)</label>
+                <input type="text" id="catModalNote" placeholder="e.g., Quit 15m in, boring / Watched with Emily" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">4. Streaming App</label>
+                <div id="catModalAppGrid" class="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto no-scrollbar"></div>
             </div>
 
             <button onclick="confirmCatalogModal()" class="w-full bg-purple-600 py-3 rounded-2xl font-bold text-xs text-white btn-action shadow-lg">Save to Catalog</button>
+        </div>
+    </div>
+
+    <!-- "Pick Tonight's Watch" Randomizer Modal -->
+    <div id="randomizerOverlay" class="fixed inset-0 z-[75] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center" onclick="if(event.target===this) closeRandomizer()">
+        <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative space-y-4 text-center">
+            <button onclick="closeRandomizer()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="inline-flex p-3 rounded-2xl bg-purple-500/10 text-purple-400 mx-auto">
+                <i data-lucide="dices" class="w-7 h-7"></i>
+            </div>
+            <h2 class="text-base font-extrabold">Tonight's Watch Pick</h2>
+            <div class="flex gap-1.5 justify-center">
+                <button onclick="setRandomizerFilter('all')" id="randFilter-all" class="px-3 py-1 rounded-lg text-[10px] font-bold bg-purple-600 text-white">Any Type</button>
+                <button onclick="setRandomizerFilter('Movie')" id="randFilter-Movie" class="px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400">Movies</button>
+                <button onclick="setRandomizerFilter('TV Show')" id="randFilter-TV Show" class="px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400">TV Shows</button>
+            </div>
+            <div id="randomizerResult" class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 min-h-[140px] flex flex-col items-center justify-center"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="spinRandomizer()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white flex items-center justify-center gap-1.5 border border-slate-700">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Spin Again
+                </button>
+                <button id="randomizerLaunchBtn" class="py-3 rounded-xl bg-purple-600 text-xs font-bold text-white flex items-center justify-center gap-1.5">
+                    <i data-lucide="play" class="w-3.5 h-3.5"></i> Open App
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-App YouTube Video Player Modal -->
+    <div id="ytPlayerOverlay" class="fixed inset-0 z-[80] bg-slate-950/95 hidden p-4 flex flex-col justify-center items-center" onclick="if(event.target===this) closeYtPlayer()">
+        <div class="glass-card w-full max-w-xl rounded-3xl p-4 relative space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h3 id="ytPlayerTitle" class="text-xs font-bold text-white truncate pr-4">YouTube Video</h3>
+                <button onclick="closeYtPlayer()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black">
+                <iframe id="ytPlayerIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="flex justify-between gap-2 pt-1">
+                <button id="ytPlayerExternalBtn" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 flex items-center justify-center gap-1.5">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in YouTube App
+                </button>
+                <button id="ytPlayerWatchedBtn" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-xs font-bold text-white flex items-center justify-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Mark Watched & Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Editor Modal -->
+    <div id="subModalOverlay" class="fixed inset-0 z-[75] bg-slate-950/90 hidden p-5 flex flex-col justify-center items-center" onclick="if(event.target===this) closeSubModal()">
+        <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative space-y-4">
+            <button onclick="closeSubModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 id="subModalTitle" class="text-base font-extrabold text-white">Manage Subscription</h2>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                <span class="text-xs font-bold text-slate-300">Currently Subscribed</span>
+                <input type="checkbox" id="subModalActive" class="w-5 h-5 accent-purple-500 rounded cursor-pointer">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Billing Cycle</label>
+                    <select id="subModalCycle" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none">
+                        <option value="monthly">Monthly (7d Alert)</option>
+                        <option value="annual">Annual (30d Alert)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Price ($)</label>
+                    <input type="text" id="subModalCost" placeholder="e.g. 5.99" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Next Renewal Date</label>
+                <input type="date" id="subModalDate" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none">
+            </div>
+
+            <label class="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 cursor-pointer">
+                <input type="checkbox" id="subModalPromo" class="w-4 h-4 mt-0.5 accent-amber-400 rounded">
+                <div class="text-[11px] leading-snug">
+                    <span class="font-bold text-amber-300 block">Subscribed with Promo Code / Discount</span>
+                    <span class="text-slate-400 text-[10px]">Flags this sub so you remember to check the price before it renews at full rate!</span>
+                </div>
+            </label>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Promo / Plan Note (Optional)</label>
+                <input type="text" id="subModalNote" placeholder="e.g., Student deal ends Oct / Reg price $14.99" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+            </div>
+
+            <button onclick="saveSubModal()" class="w-full bg-purple-600 py-3 rounded-2xl font-bold text-xs text-white btn-action">Save Subscription</button>
         </div>
     </div>
 
@@ -199,19 +310,15 @@
             <button onclick="closeBulkImportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             <h2 class="text-base font-extrabold">Import App Watchlist / History</h2>
             <p class="text-[11px] text-slate-400 leading-relaxed">
-                Streaming apps don't allow direct logins from third-party sites, but you can bulk-import your history or watchlists in seconds:
+                Bulk-import your viewing history or watchlists in seconds:
             </p>
 
-            <!-- Option A: Netflix Viewing Activity CSV -->
             <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-red-400 flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Netflix Viewing History (.CSV)</span>
-                </div>
-                <p class="text-[10px] text-slate-400">Download your CSV from <b>netflix.com/viewingactivity</b> (bottom of page) and select it here. Episodes are automatically grouped into their main show title!</p>
+                <span class="text-xs font-bold text-red-400 flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Netflix Viewing History (.CSV)</span>
+                <p class="text-[10px] text-slate-400">Download your CSV from <b>netflix.com/viewingactivity</b> and select it here. Episodes are automatically grouped into their main series title.</p>
                 <input type="file" id="netflixCsvInput" accept=".csv" onchange="handleNetflixCsvUpload(event)" class="block w-full text-[11px] text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-red-600/20 file:text-red-400 hover:file:bg-red-600/30 cursor-pointer">
             </div>
 
-            <!-- Option B: Quick Paste List -->
             <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3">
                 <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5"><i data-lucide="list-plus" class="w-4 h-4"></i> Paste List of Titles (One per line)</span>
                 <div class="grid grid-cols-2 gap-2">
@@ -219,6 +326,7 @@
                     <select id="bulkStatusSelect" class="bg-slate-800 text-xs font-bold text-white rounded-xl px-3 py-2 border border-slate-700 outline-none">
                         <option value="watched">Mark as Watched</option>
                         <option value="want">Mark as Want to Watch</option>
+                        <option value="dropped">Mark as Dropped / Skip</option>
                     </select>
                 </div>
                 <textarea id="bulkTextInput" rows="4" placeholder="Severance&#10;The Bear&#10;Dune: Part Two&#10;Fallout" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500"></textarea>
@@ -248,31 +356,14 @@
     </div>
 
     <!-- Settings Overlay -->
-    <div id="settingsOverlay" class="fixed inset-0 z-[60] bg-slate-950/95 hidden p-6 flex flex-col overflow-y-auto no-scrollbar">
-        <div class="flex items-center gap-4 mb-6">
+    <div id="settingsOverlay" class="fixed inset-0 z-[60] bg-slate-950/95 hidden p-5 flex flex-col overflow-y-auto no-scrollbar">
+        <div class="flex items-center gap-4 mb-6 max-w-lg mx-auto w-full">
             <button onclick="toggleSettings()" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i></button>
-            <h2 class="text-xl font-bold">Settings <span class="text-xs font-normal text-slate-500 ml-1">v4.2</span></h2>
+            <h2 class="text-xl font-bold">Settings & Subs <span class="text-xs font-normal text-slate-500 ml-1">v5.0</span></h2>
         </div>
-        <div class="space-y-6 max-w-lg mx-auto w-full">
-            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-3">App Theme</label>
-                <div class="flex gap-4">
-                    <div onclick="setTheme('#8b5cf6')" class="theme-dot bg-purple-500" data-theme="#8b5cf6"></div>
-                    <div onclick="setTheme('#3b82f6')" class="theme-dot bg-blue-500" data-theme="#3b82f6"></div>
-                    <div onclick="setTheme('#10b981')" class="theme-dot bg-emerald-500" data-theme="#10b981"></div>
-                    <div onclick="setTheme('#f43f5e')" class="theme-dot bg-rose-500" data-theme="#f43f5e"></div>
-                </div>
-            </section>
-            
-            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-3">Feed History Window</label>
-                <div class="flex gap-2">
-                    <button onclick="setFeedDays(7)" id="btn-days-7" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">7 Days</button>
-                    <button onclick="setFeedDays(14)" id="btn-days-14" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">14 Days</button>
-                    <button onclick="setFeedDays(30)" id="btn-days-30" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">30 Days</button>
-                </div>
-            </section>
+        <div class="space-y-6 max-w-lg mx-auto w-full pb-12">
 
+            <!-- Stats Banner -->
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 flex justify-around text-center">
                 <div><p class="text-[10px] font-bold text-slate-500 uppercase">Tracking</p><p id="stat-followed" class="text-xl font-black text-white">0</p></div>
                 <div class="w-px bg-slate-800"></div>
@@ -281,16 +372,100 @@
                 <div><p class="text-[10px] font-bold text-slate-500 uppercase">In Catalog</p><p id="stat-catalog" class="text-xl font-black text-white">0</p></div>
             </section>
 
-            <section>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">YouTube API Key</label>
-                <input type="password" id="ytApiKeyInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none text-sm">
+            <!-- Subscription Renewal, Promo & Pause Optimizer Tracker -->
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <label class="block text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                            <i data-lucide="credit-card" class="w-4 h-4 text-purple-400"></i> Subscriptions & Renewals
+                        </label>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Green = Safe • <span class="text-rose-400 font-bold">Red = Renews within 7d (Monthly) or 30d (Annual)</span></p>
+                    </div>
+                </div>
+                <div id="subsManagerList" class="space-y-2 pt-1"></div>
             </section>
 
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="exportData()" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 border border-slate-700"><i data-lucide="download" class="w-4 h-4"></i> Copy Backup</button>
-                <button onclick="importData()" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 border border-slate-700"><i data-lucide="upload" class="w-4 h-4"></i> Restore Backup</button>
-            </div>
-            <button onclick="saveSettings()" class="w-full bg-purple-600 py-4 rounded-2xl font-bold btn-action text-sm">Save Changes</button>
+            <!-- Playback & Feed Preferences -->
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 space-y-4">
+                <label class="block text-xs font-bold text-slate-400 uppercase">Preferences & Theme</label>
+                <div class="flex gap-4">
+                    <div onclick="setTheme('#8b5cf6')" class="theme-dot bg-purple-500" data-theme="#8b5cf6"></div>
+                    <div onclick="setTheme('#3b82f6')" class="theme-dot bg-blue-500" data-theme="#3b82f6"></div>
+                    <div onclick="setTheme('#10b981')" class="theme-dot bg-emerald-500" data-theme="#10b981"></div>
+                    <div onclick="setTheme('#f43f5e')" class="theme-dot bg-rose-500" data-theme="#f43f5e"></div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Feed History Window</p>
+                    <div class="flex gap-2">
+                        <button onclick="setFeedDays(7)" id="btn-days-7" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">7 Days</button>
+                        <button onclick="setFeedDays(14)" id="btn-days-14" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">14 Days</button>
+                        <button onclick="setFeedDays(30)" id="btn-days-30" class="flex-1 py-2 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 transition-all">30 Days</button>
+                    </div>
+                </div>
+
+                <label class="flex items-center justify-between pt-2 border-t border-slate-800 cursor-pointer">
+                    <div>
+                        <span class="text-xs font-bold text-slate-200 block">Auto-Mark Watched on Launch</span>
+                        <span class="text-[10px] text-slate-400">Automatically mark episodes/videos watched when you tap to open them</span>
+                    </div>
+                    <input type="checkbox" id="autoWatchToggle" onchange="toggleAutoWatch(this.checked)" class="w-5 h-5 accent-purple-500 rounded">
+                </label>
+
+                <label class="flex items-center justify-between pt-2 border-t border-slate-800 cursor-pointer">
+                    <div>
+                        <span class="text-xs font-bold text-slate-200 block">In-App YouTube Player</span>
+                        <span class="text-[10px] text-slate-400">Play YouTube videos in a popup modal instead of leaving the app</span>
+                    </div>
+                    <input type="checkbox" id="inAppYtToggle" onchange="toggleInAppYt(this.checked)" class="w-5 h-5 accent-purple-500 rounded">
+                </label>
+            </section>
+
+            <!-- Cloud Sync (GitHub Gist) -->
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 space-y-3">
+                <label class="block text-xs font-bold text-white uppercase flex items-center gap-1.5">
+                    <i data-lucide="cloud" class="w-4 h-4 text-blue-400"></i> 1-Click Cloud Sync (GitHub Gist)
+                </label>
+                <p class="text-[10px] text-slate-400">Sync your shows, catalog, and subscriptions across your phone and PC. Leave Gist ID blank on your first Push to auto-create one.</p>
+                <input type="password" id="gistTokenInput" placeholder="GitHub Personal Access Token (ghp_...)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none">
+                <input type="text" id="gistIdInput" placeholder="Gist ID (Auto-filled on first Push)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white outline-none">
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button onclick="pushToGist()" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                        <i data-lucide="cloud-upload" class="w-4 h-4"></i> Push to Cloud
+                    </button>
+                    <button onclick="pullFromGist()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                        <i data-lucide="cloud-download" class="w-4 h-4"></i> Pull from Cloud
+                    </button>
+                </div>
+            </section>
+
+            <!-- YouTube API Key -->
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase">YouTube API Key</label>
+                <input type="password" id="ytApiKeyInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 outline-none text-xs">
+            </section>
+
+            <!-- File & Clipboard Backup -->
+            <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 space-y-3">
+                <label class="block text-xs font-bold text-slate-400 uppercase">Local Backup & Restore</label>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="downloadBackupFile()" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 border border-slate-700">
+                        <i data-lucide="file-down" class="w-4 h-4 text-purple-400"></i> Download .JSON
+                    </button>
+                    <label class="bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-xs font-bold flex flex-col items-center gap-1.5 border border-slate-700 cursor-pointer">
+                        <i data-lucide="file-up" class="w-4 h-4 text-emerald-400"></i> Restore .JSON
+                        <input type="file" accept=".json" onchange="uploadBackupFile(event)" class="hidden">
+                    </label>
+                    <button onclick="exportData()" class="bg-slate-800/60 hover:bg-slate-700 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-slate-800 text-slate-400">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Text
+                    </button>
+                    <button onclick="importData()" class="bg-slate-800/60 hover:bg-slate-700 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border border-slate-800 text-slate-400">
+                        <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i> Paste Text
+                    </button>
+                </div>
+            </section>
+
+            <button onclick="saveSettings()" class="w-full bg-purple-600 py-4 rounded-2xl font-bold btn-action text-sm shadow-lg">Save Settings</button>
         </div>
     </div>
 
@@ -304,6 +479,7 @@
                     <select id="watchlistSortSelect" onchange="changeWatchlistSort(this.value)" class="bg-slate-800/80 text-[11px] font-bold text-slate-300 rounded-lg px-2 py-1 border border-slate-700 outline-none">
                         <option value="airdate">Next Airdate</option>
                         <option value="alpha">A - Z</option>
+                        <option value="status">Show Status</option>
                         <option value="added">Order Added</option>
                     </select>
                 </div>
@@ -324,8 +500,20 @@
             </div>
         </section>
 
-        <!-- 2. TV Releases Section -->
+        <!-- 2. TV Releases Section (With 7-Day Visual Airing Calendar Strip) -->
         <section id="section-tv" class="hidden space-y-4">
+            <!-- 7-Day Upcoming Schedule Strip -->
+            <div id="weekCalendarContainer" class="glass-card rounded-2xl p-3 space-y-2">
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-purple-400"></i> This Week's Airing Schedule
+                    </span>
+                    <span id="calendarSelectedLabel" class="text-[10px] font-bold text-purple-400">Next 7 Days</span>
+                </div>
+                <div id="weekCalendarStrip" class="grid grid-cols-7 gap-1.5"></div>
+                <div id="weekCalendarDayDetails" class="hidden pt-2 border-t border-slate-800/80 space-y-1.5"></div>
+            </div>
+
             <div id="tv-header" class="flex justify-between items-center hidden">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unwatched Episodes</p>
                 <button id="btn-mark-all-tv" onclick="markAllTypeWatched('tv')" class="text-[10px] font-bold px-3 py-1 rounded-full">Mark All Watched</button>
@@ -354,13 +542,16 @@
         <section id="section-catalog" class="hidden space-y-3">
             <!-- Top Actions Bar -->
             <div class="flex justify-between items-center px-1">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streaming App Vault</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streaming Vault</p>
                 <div class="flex gap-1.5">
+                    <button onclick="openRandomizer()" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <i data-lucide="dices" class="w-3.5 h-3.5"></i> Pick Tonight
+                    </button>
                     <button onclick="openBulkImportModal()" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
-                        <i data-lucide="file-up" class="w-3 h-3"></i> Import List / CSV
+                        <i data-lucide="file-up" class="w-3 h-3"></i> Import
                     </button>
                     <button onclick="toggleSearch()" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-purple-600 text-white flex items-center gap-1">
-                        <i data-lucide="plus" class="w-3 h-3"></i> Add Title
+                        <i data-lucide="plus" class="w-3 h-3"></i> Add
                     </button>
                 </div>
             </div>
@@ -371,16 +562,19 @@
             <!-- Status Filter Pills & Search Input -->
             <div class="flex flex-col sm:flex-row gap-2">
                 <div class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
-                    <button id="catFilter-all" onclick="setCatalogStatusFilter('all')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-slate-800 text-white transition-all">All</button>
-                    <button id="catFilter-watched" onclick="setCatalogStatusFilter('watched')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
+                    <button id="catFilter-all" onclick="setCatalogStatusFilter('all')" class="flex-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-slate-800 text-white transition-all">All</button>
+                    <button id="catFilter-watched" onclick="setCatalogStatusFilter('watched')" class="flex-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Watched
                     </button>
-                    <button id="catFilter-want" onclick="setCatalogStatusFilter('want')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Want to Watch
+                    <button id="catFilter-want" onclick="setCatalogStatusFilter('want')" class="flex-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Want
+                    </button>
+                    <button id="catFilter-dropped" onclick="setCatalogStatusFilter('dropped')" class="flex-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Dropped
                     </button>
                 </div>
                 <div class="relative flex-1">
-                    <input type="text" id="catalogSearchInput" oninput="updateCatalogSearch()" placeholder="Check if you've watched a movie or show..." class="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-purple-500">
+                    <input type="text" id="catalogSearchInput" oninput="updateCatalogSearch()" placeholder="Check if you've watched or dropped a title..." class="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-purple-500">
                 </div>
             </div>
 
@@ -398,8 +592,10 @@
     <script>
         const STORAGE_KEY = 'showtrack_v3_data';
         const CATALOG_KEY = 'showtrack_catalog_v1';
+        const SUBS_KEY = 'showtrack_subs_v5';
         const SETTINGS_KEY = 'showtrack_settings';
         const CACHE_TV_KEY = 'showtrack_tv_cache_v4';
+        const CACHE_UPCOMING_KEY = 'showtrack_upcoming_cache_v5';
         const CACHE_YT_KEY = 'showtrack_yt_cache_v4';
         const SYNC_META_KEY = 'showtrack_sync_meta_v4';
 
@@ -426,27 +622,34 @@
         let undoSnapshot = null;
         let isRefreshingTV = false;
         let searchMap = {};
+        let selectedCalendarDateKey = null;
+        let activeSubEditApp = null;
+        let randomizerTypeFilter = 'all';
 
-        // Catalog state
+        // Data State
         let catalog = JSON.parse(localStorage.getItem(CATALOG_KEY) || '[]');
+        let subscriptions = JSON.parse(localStorage.getItem(SUBS_KEY) || '{}');
         let activeCatalogApp = 'All';
-        let activeCatalogStatus = 'all'; // 'all' | 'watched' | 'want'
+        let activeCatalogStatus = 'all';
         let catalogSearchQuery = '';
         let pendingCatalogItem = null;
         let pendingCatalogStatus = 'watched';
         let pendingCatalogApp = 'Netflix';
+        let pendingCatalogRating = '';
 
         let watchlist = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0, "feedDays": 7, "sortBy": "airdate"}');
+        let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0, "feedDays": 7, "sortBy": "airdate", "autoMarkWatched": false, "inAppYouTube": true, "gistToken": "", "gistId": ""}');
         if (!settings.feedDays) settings.feedDays = 7;
         if (!settings.sortBy) settings.sortBy = 'airdate';
+        if (settings.inAppYouTube === undefined) settings.inAppYouTube = true;
 
         let tvQueue = JSON.parse(localStorage.getItem(CACHE_TV_KEY) || '[]');
+        let upcomingQueue = JSON.parse(localStorage.getItem(CACHE_UPCOMING_KEY) || '[]');
         let ytQueue = JSON.parse(localStorage.getItem(CACHE_YT_KEY) || '[]');
         let syncMeta = JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{"lastTvSync": 0, "lastYtSync": 0}');
         let watchlistFilterQuery = '';
 
-        // Auto-updating Service Worker Registration
+        // Auto-updating Service Worker
         if ('serviceWorker' in navigator && window.location.protocol.startsWith('http') && !window.location.host.includes('goog')) { 
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
@@ -466,7 +669,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             applyTheme(settings.theme); 
             const apiKeyInput = document.getElementById('ytApiKeyInput');
-            if (apiKeyInput) apiKeyInput.value = settings.ytApiKey;
+            if (apiKeyInput) apiKeyInput.value = settings.ytApiKey || '';
+            const gistTokenInput = document.getElementById('gistTokenInput');
+            if (gistTokenInput) gistTokenInput.value = settings.gistToken || '';
+            const gistIdInput = document.getElementById('gistIdInput');
+            if (gistIdInput) gistIdInput.value = settings.gistId || '';
+            const autoWatchEl = document.getElementById('autoWatchToggle');
+            if (autoWatchEl) autoWatchEl.checked = !!settings.autoMarkWatched;
+            const inAppYtEl = document.getElementById('inAppYtToggle');
+            if (inAppYtEl) inAppYtEl.checked = !!settings.inAppYouTube;
+
             const sortSelect = document.getElementById('watchlistSortSelect');
             if (sortSelect) sortSelect.value = settings.sortBy;
             
@@ -543,8 +755,8 @@
             if (activeTab === 'youtube') {
                 syncYouTube();
             } else {
-                showToast("Refreshing TV schedules...");
-                refreshTVData(forceAll).then(() => showToast("TV schedules up to date!"));
+                showToast("Refreshing TV schedules & statuses...");
+                refreshTVData(forceAll).then(() => showToast("TV schedules & statuses updated!"));
             }
         }
 
@@ -554,10 +766,59 @@
             refreshUI();
         }
 
+        // ==================== SHOW STATUS BADGE LOGIC ====================
+        // Computes 1 of 4 clear statuses: 'Airing', 'Renewed', 'TBD', or 'Ended'
+        function getComputedShowStatus(item) {
+            if (item.manualStatus) return item.manualStatus;
+            const raw = item.showStatus || 'Running';
+            if (raw === 'Ended') return 'Ended';
+            if (raw === 'To Be Determined') return 'TBD';
+            if (raw === 'In Development') return 'Renewed';
+            // If 'Running', check if it has an upcoming episode scheduled
+            if (item.nextAirDate && new Date(item.nextAirDate).getTime() > Date.now()) {
+                return 'Airing';
+            }
+            return 'Renewed';
+        }
+
+        function getStatusBadgeMetadata(state) {
+            switch (state) {
+                case 'Airing':
+                    return { label: 'Airing', icon: 'radio', classes: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', rank: 1 };
+                case 'Renewed':
+                    return { label: 'Renewed', icon: 'sparkles', classes: 'bg-sky-500/15 text-sky-400 border-sky-500/30', rank: 2 };
+                case 'TBD':
+                    return { label: 'TBD / Bubble', icon: 'help-circle', classes: 'bg-amber-500/15 text-amber-300 border-amber-500/30', rank: 3 };
+                case 'Ended':
+                default:
+                    return { label: 'Ended / Canceled', icon: 'ban', classes: 'bg-rose-500/15 text-rose-400 border-rose-500/30', rank: 4 };
+            }
+        }
+
+        function cycleManualShowStatus(id) {
+            const idx = watchlist.findIndex(w => String(w.id) === String(id));
+            if (idx === -1) return;
+            const order = [null, 'Airing', 'Renewed', 'TBD', 'Ended'];
+            const current = watchlist[idx].manualStatus || null;
+            const next = order[(order.indexOf(current) + 1) % order.length];
+            watchlist[idx].manualStatus = next;
+            saveData();
+            refreshUI();
+            showToast(next ? `Status set to: ${next}` : 'Status set to: Auto (TVMaze)');
+        }
+
         function getSortedWatchlist(items) {
             const copy = [...items];
             if (settings.sortBy === 'alpha') {
                 return copy.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            if (settings.sortBy === 'status') {
+                return copy.sort((a, b) => {
+                    const rA = getStatusBadgeMetadata(getComputedShowStatus(a)).rank;
+                    const rB = getStatusBadgeMetadata(getComputedShowStatus(b)).rank;
+                    if (rA !== rB) return rA - rB;
+                    return a.name.localeCompare(b.name);
+                });
             }
             if (settings.sortBy === 'airdate') {
                 return copy.sort((a, b) => {
@@ -620,9 +881,10 @@
                 badgeTV.classList.toggle('hidden', tvQueue.length === 0);
             }
             if (activeTab === 'tv' && tvDiv) {
+                renderWeekCalendar();
                 const tvHeader = document.getElementById('tv-header');
                 if (tvHeader) tvHeader.classList.toggle('hidden', tvQueue.length === 0);
-                tvDiv.innerHTML = tvQueue.length ? renderQueue(tvQueue, 'tv') : '<div class="text-center py-20 text-slate-500 text-xs italic">All caught up! No unwatched episodes in your feed window.</div>';
+                tvDiv.innerHTML = tvQueue.length ? renderQueue(tvQueue, 'tv') : '<div class="text-center py-16 text-slate-500 text-xs italic">All caught up! No unwatched episodes in your feed window.</div>';
             }
 
             if (badgeYT) {
@@ -642,9 +904,220 @@
             if (activeTab === 'catalog') {
                 renderCatalogSection();
             }
-            
+
+            checkSubscriptionHeaderAlert();
             lucide.createIcons();
             applyTheme(settings.theme);
+        }
+
+        // ==================== 7-DAY VISUAL SCHEDULE STRIP ====================
+
+        function getLocalDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function renderWeekCalendar() {
+            const strip = document.getElementById('weekCalendarStrip');
+            const details = document.getElementById('weekCalendarDayDetails');
+            if (!strip || !details) return;
+
+            const now = new Date();
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+                const key = getLocalDateKey(d);
+                const dayName = i === 0 ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short' });
+                const dayNum = d.getDate();
+                const eps = upcomingQueue.filter(e => getLocalDateKey(new Date(e.date)) === key);
+                days.push({ key, dayName, dayNum, eps });
+            }
+
+            strip.innerHTML = days.map(d => {
+                const isSelected = selectedCalendarDateKey === d.key;
+                const hasEps = d.eps.length > 0;
+                return `<button onclick="selectCalendarDay('${d.key}')" class="p-2 rounded-xl border text-center transition-all flex flex-col items-center gap-1 ${isSelected ? 'bg-purple-600 border-purple-400 text-white' : (hasEps ? 'bg-slate-800/90 border-purple-500/40 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-500')}">
+                    <span class="text-[9px] font-bold uppercase tracking-tighter">${d.dayName}</span>
+                    <span class="text-xs font-black">${d.dayNum}</span>
+                    <div class="flex gap-0.5 h-1.5 items-center justify-center">
+                        ${d.eps.slice(0, 3).map(() => `<span class="w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-pink-500'}"></span>`).join('')}
+                    </div>
+                </button>`;
+            }).join('');
+
+            if (selectedCalendarDateKey) {
+                const activeDay = days.find(d => d.key === selectedCalendarDateKey);
+                if (activeDay) {
+                    details.classList.remove('hidden');
+                    details.innerHTML = activeDay.eps.length
+                        ? activeDay.eps.map(e => `<div class="flex items-center justify-between px-2 py-1.5 rounded-xl bg-slate-900/70 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <img src="${e.thumb || FALLBACK_IMG}" class="w-6 h-8 object-cover rounded">
+                                <div class="truncate">
+                                    <p class="font-bold text-white text-[11px] truncate">${e.showName}</p>
+                                    <p class="text-[10px] text-slate-400 truncate">${e.epCode} • ${e.title}</p>
+                                </div>
+                            </div>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-purple-400 shrink-0">${new Date(e.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>`).join('')
+                        : `<p class="text-[11px] text-slate-500 italic text-center py-1">No tracked shows airing on this day.</p>`;
+                } else {
+                    details.classList.add('hidden');
+                }
+            } else {
+                details.classList.add('hidden');
+            }
+        }
+
+        function selectCalendarDay(key) {
+            selectedCalendarDateKey = selectedCalendarDateKey === key ? null : key;
+            renderWeekCalendar();
+        }
+
+        // ==================== SUBSCRIPTION RENEWAL & PROMO TRACKER ====================
+
+        function saveSubscriptions() {
+            localStorage.setItem(SUBS_KEY, JSON.stringify(subscriptions));
+            checkSubscriptionHeaderAlert();
+        }
+
+        function parseLocalDate(yyyyMmDd) {
+            if (!yyyyMmDd) return null;
+            const parts = yyyyMmDd.split('-').map(Number);
+            if (parts.length !== 3) return null;
+            return new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59);
+        }
+
+        function getSubDaysRemaining(sub) {
+            if (!sub || !sub.active || !sub.renewDate) return null;
+            const target = parseLocalDate(sub.renewDate);
+            if (!target) return null;
+            return Math.ceil((target.getTime() - Date.now()) / 86400000);
+        }
+
+        function isSubInWarningZone(sub) {
+            const days = getSubDaysRemaining(sub);
+            if (days === null) return false;
+            const threshold = sub.cycle === 'annual' ? 30 : 7;
+            return days <= threshold;
+        }
+
+        function checkSubscriptionHeaderAlert() {
+            const dot = document.getElementById('subAlertDot');
+            if (!dot) return;
+            const hasAlert = Object.values(subscriptions).some(sub => isSubInWarningZone(sub));
+            dot.classList.toggle('hidden', !hasAlert);
+        }
+
+        function getAppUsageCounts(appName) {
+            const airingShows = watchlist.filter(w => {
+                if (w.type !== 'tv') return false;
+                const app = w.tvApp && w.tvApp !== 'Default' ? w.tvApp : mapPlatformToApp(w.platform);
+                const state = getComputedShowStatus(w);
+                return app === appName && (state === 'Airing' || state === 'Renewed');
+            }).length;
+
+            const wantItems = catalog.filter(c => c.app === appName && c.status === 'want').length;
+            return { airingShows, wantItems, totalActiveNeed: airingShows + wantItems };
+        }
+
+        function renderSubscriptionsManager() {
+            const container = document.getElementById('subsManagerList');
+            if (!container) return;
+
+            const apps = STREAMING_APPS.filter(a => a.name !== 'Default' && a.name !== 'Other');
+            container.innerHTML = apps.map(app => {
+                const sub = subscriptions[app.name] || { active: false, cycle: 'monthly', renewDate: '', promo: false, cost: '', note: '' };
+                const usage = getAppUsageCounts(app.name);
+                const daysLeft = getSubDaysRemaining(sub);
+                const isRed = isSubInWarningZone(sub);
+                const safeToPause = sub.active && usage.totalActiveNeed === 0;
+
+                let statusLine = `<span class="text-[10px] text-slate-500">Not subscribed • ${usage.airingShows} active shows, ${usage.wantItems} want-to-watch</span>`;
+                if (sub.active) {
+                    const cycleLabel = sub.cycle === 'annual' ? 'Annual' : 'Monthly';
+                    const costLabel = sub.cost ? `$${sub.cost}/${sub.cycle === 'annual' ? 'yr' : 'mo'} • ` : '';
+                    if (daysLeft !== null) {
+                        const dayText = daysLeft < 0 ? `Overdue by ${Math.abs(daysLeft)}d` : (daysLeft === 0 ? 'Renews TODAY!' : `Renews in ${daysLeft}d (${sub.renewDate})`);
+                        statusLine = `<span class="text-[11px] font-extrabold ${isRed ? 'text-rose-400' : 'text-emerald-400'}">${costLabel}${cycleLabel} • ${dayText}</span>`;
+                    } else {
+                        statusLine = `<span class="text-[11px] font-bold text-emerald-400">${costLabel}${cycleLabel} • Active (No date set)</span>`;
+                    }
+                }
+
+                return `<div class="p-3 rounded-2xl border transition-all ${sub.active ? (isRed ? 'bg-rose-950/25 border-rose-500/50' : 'bg-slate-900/90 border-slate-700/80') : 'bg-slate-900/30 border-slate-800/60 opacity-75'}">
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="text-xs font-extrabold text-white">${app.name}</span>
+                                ${sub.active && sub.promo ? `<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">🏷️ Promo — Check Next Price</span>` : ''}
+                                ${safeToPause ? `<span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">💤 0 Active — Safe to Pause</span>` : ''}
+                            </div>
+                            <div class="mt-1">${statusLine}</div>
+                            ${sub.active && sub.note ? `<p class="text-[10px] text-slate-300 mt-1 italic">"${sub.note}"</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            ${sub.active && sub.renewDate ? `<button onclick="bumpSubRenewal('${app.name}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[9px] font-bold text-slate-300 border border-slate-700" title="Advance renewal date by 1 cycle">+1 Cycle</button>` : ''}
+                            <button onclick="openSubModal('${app.name}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openSubModal(appName) {
+            activeSubEditApp = appName;
+            const sub = subscriptions[appName] || { active: true, cycle: 'monthly', renewDate: '', promo: false, cost: '', note: '' };
+            document.getElementById('subModalTitle').innerText = `${appName} Subscription`;
+            document.getElementById('subModalActive').checked = !!sub.active;
+            document.getElementById('subModalCycle').value = sub.cycle || 'monthly';
+            document.getElementById('subModalCost').value = sub.cost || '';
+            document.getElementById('subModalDate').value = sub.renewDate || '';
+            document.getElementById('subModalPromo').checked = !!sub.promo;
+            document.getElementById('subModalNote').value = sub.note || '';
+            document.getElementById('subModalOverlay').classList.remove('hidden');
+        }
+
+        function closeSubModal() {
+            document.getElementById('subModalOverlay').classList.add('hidden');
+            activeSubEditApp = null;
+        }
+
+        function saveSubModal() {
+            if (!activeSubEditApp) return;
+            subscriptions[activeSubEditApp] = {
+                active: document.getElementById('subModalActive').checked,
+                cycle: document.getElementById('subModalCycle').value,
+                cost: document.getElementById('subModalCost').value.trim(),
+                renewDate: document.getElementById('subModalDate').value,
+                promo: document.getElementById('subModalPromo').checked,
+                note: document.getElementById('subModalNote').value.trim()
+            };
+            saveSubscriptions();
+            renderSubscriptionsManager();
+            closeSubModal();
+            showToast(`Updated ${activeSubEditApp} subscription`);
+        }
+
+        function bumpSubRenewal(appName) {
+            const sub = subscriptions[appName];
+            if (!sub || !sub.renewDate) return;
+            const d = parseLocalDate(sub.renewDate);
+            if (!d) return;
+            if (sub.cycle === 'annual') {
+                d.setFullYear(d.getFullYear() + 1);
+            } else {
+                d.setMonth(d.getMonth() + 1);
+            }
+            sub.renewDate = getLocalDateKey(d);
+            saveSubscriptions();
+            renderSubscriptionsManager();
+            showToast(`${appName} rolled forward to ${sub.renewDate}`);
         }
 
         // ==================== CATALOG / VAULT FUNCTIONS ====================
@@ -679,12 +1152,15 @@
             const existing = catalog.find(c => String(c.id) === String(item.id));
             pendingCatalogStatus = existing ? existing.status : defaultStatus;
             pendingCatalogApp = existing ? existing.app : (item.tvApp && item.tvApp !== 'Default' ? item.tvApp : mapPlatformToApp(item.platform));
+            pendingCatalogRating = existing ? (existing.rating || '') : '';
 
             document.getElementById('catModalImg').src = item.image || FALLBACK_IMG;
             document.getElementById('catModalType').innerText = item.mediaType || (item.type === 'movie' ? 'Movie' : 'TV Show');
             document.getElementById('catModalTitle').innerText = item.name;
+            document.getElementById('catModalNote').value = existing ? (existing.note || '') : '';
 
             setCatModalStatus(pendingCatalogStatus);
+            setCatModalRating(pendingCatalogRating, true);
             renderCatModalApps();
             document.getElementById('catalogModalOverlay').classList.remove('hidden');
             lucide.createIcons();
@@ -699,13 +1175,25 @@
             pendingCatalogStatus = status;
             const wBtn = document.getElementById('catStatusWatchedBtn');
             const wantBtn = document.getElementById('catStatusWantBtn');
-            if (status === 'watched') {
-                wBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-emerald-600/20 border-emerald-500 text-emerald-300';
-                wantBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-800 border-slate-700 text-slate-400';
+            const dropBtn = document.getElementById('catStatusDroppedBtn');
+            const base = 'py-2 px-2 rounded-xl text-[11px] font-bold border flex flex-col items-center justify-center gap-1 transition-all ';
+            const inactive = base + 'bg-slate-800 border-slate-700 text-slate-400';
+
+            wBtn.className = status === 'watched' ? base + 'bg-emerald-600/20 border-emerald-500 text-emerald-300' : inactive;
+            wantBtn.className = status === 'want' ? base + 'bg-amber-500/20 border-amber-500 text-amber-300' : inactive;
+            dropBtn.className = status === 'dropped' ? base + 'bg-rose-500/20 border-rose-500 text-rose-300' : inactive;
+        }
+
+        function setCatModalRating(rating, keepSame = false) {
+            if (!keepSame && pendingCatalogRating === rating) {
+                pendingCatalogRating = '';
             } else {
-                wantBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-amber-500/20 border-amber-500 text-amber-300';
-                wBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-800 border-slate-700 text-slate-400';
+                pendingCatalogRating = rating;
             }
+            document.querySelectorAll('.cat-rate-btn').forEach(btn => {
+                const active = btn.dataset.rating === pendingCatalogRating;
+                btn.className = `cat-rate-btn py-1.5 rounded-lg text-[10px] font-bold border transition-all ${active ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-300'}`;
+            });
         }
 
         function renderCatModalApps() {
@@ -724,6 +1212,7 @@
 
         function confirmCatalogModal() {
             if (!pendingCatalogItem) return;
+            const noteVal = document.getElementById('catModalNote').value.trim();
             const idx = catalog.findIndex(c => String(c.id) === String(pendingCatalogItem.id));
             const entry = {
                 id: String(pendingCatalogItem.id),
@@ -732,6 +1221,8 @@
                 mediaType: pendingCatalogItem.mediaType || (pendingCatalogItem.type === 'movie' ? 'Movie' : 'TV Show'),
                 app: pendingCatalogApp,
                 status: pendingCatalogStatus,
+                rating: pendingCatalogRating,
+                note: noteVal,
                 year: pendingCatalogItem.year || '',
                 addedAt: Date.now()
             };
@@ -749,16 +1240,19 @@
             if (searchIn && searchIn.value.trim().length >= 2 && !document.getElementById('searchOverlay').classList.contains('hidden')) {
                 performSearch(searchIn.value);
             }
-            showToast(`Saved to ${pendingCatalogApp} (${pendingCatalogStatus === 'watched' ? 'Watched' : 'Want to Watch'})`);
+            showToast(`Saved to ${pendingCatalogApp}`);
         }
 
-        function toggleCatalogItemStatus(id) {
+        function cycleCatalogItemStatus(id) {
             const idx = catalog.findIndex(c => String(c.id) === String(id));
             if (idx === -1) return;
-            catalog[idx].status = catalog[idx].status === 'watched' ? 'want' : 'watched';
+            const order = ['watched', 'want', 'dropped'];
+            const next = order[(order.indexOf(catalog[idx].status) + 1) % order.length];
+            catalog[idx].status = next;
             saveCatalog();
             refreshUI();
-            showToast(catalog[idx].status === 'watched' ? 'Marked as Watched!' : 'Moved to Want to Watch');
+            const labels = { watched: 'Marked as Watched!', want: 'Moved to Want to Watch', dropped: 'Marked as Dropped / Skip' };
+            showToast(labels[next]);
         }
 
         function removeCatalogItem(id) {
@@ -777,11 +1271,11 @@
 
         function setCatalogStatusFilter(status) {
             activeCatalogStatus = status;
-            ['all', 'watched', 'want'].forEach(s => {
+            ['all', 'watched', 'want', 'dropped'].forEach(s => {
                 const btn = document.getElementById(`catFilter-${s}`);
                 if (btn) {
                     const active = s === status;
-                    btn.className = `flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${active ? 'bg-slate-800 text-white shadow' : 'text-slate-400'}`;
+                    btn.className = `flex-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${active ? 'bg-slate-800 text-white shadow' : 'text-slate-400'}`;
                 }
             });
             renderCatalogSection();
@@ -820,19 +1314,18 @@
             const filtered = catalog.filter(item => {
                 if (activeCatalogApp !== 'All' && item.app !== activeCatalogApp) return false;
                 if (activeCatalogStatus !== 'all' && item.status !== activeCatalogStatus) return false;
-                if (catalogSearchQuery && !item.name.toLowerCase().includes(catalogSearchQuery)) return false;
+                if (catalogSearchQuery && !item.name.toLowerCase().includes(catalogSearchQuery) && !(item.note || '').toLowerCase().includes(catalogSearchQuery)) return false;
                 return true;
             });
 
             if (filtered.length === 0) {
                 contentDiv.innerHTML = `<div class="text-center py-16 text-slate-500 space-y-3">
                     <i data-lucide="film" class="w-10 h-10 mx-auto opacity-20"></i>
-                    <p class="text-xs italic">${catalog.length === 0 ? 'Your streaming vault is empty. Add shows or movies you have watched or want to watch!' : 'No matching titles in this filter.'}</p>
+                    <p class="text-xs italic">${catalog.length === 0 ? 'Your streaming vault is empty. Add shows or movies you have watched, want to watch, or dropped!' : 'No matching titles in this filter.'}</p>
                 </div>`;
                 return;
             }
 
-            // Group by app when viewing "All", or flat list when viewing a specific app
             const groups = {};
             filtered.forEach(item => {
                 const g = activeCatalogApp === 'All' ? (item.app || 'Other') : activeCatalogApp;
@@ -846,24 +1339,34 @@
                 const watchedCount = items.filter(i => i.status === 'watched').length;
                 html += `<div class="section-label"><span>${groupName}</span><span>${watchedCount}/${items.length} Watched</span></div>`;
                 items.forEach(item => {
-                    const isWatched = item.status === 'watched';
-                    html += `<div class="flex gap-3.5 p-3 glass-card rounded-2xl items-center fade-in-list border-l-4" style="border-left-color: ${isWatched ? '#10b981' : '#f59e0b'}">
-                        <img src="${item.image || FALLBACK_IMG}" loading="lazy" class="w-11 h-14 rounded-xl object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+                    const st = item.status || 'watched';
+                    const borderColor = st === 'watched' ? '#10b981' : (st === 'want' ? '#f59e0b' : '#f43f5e');
+                    const badgeStyle = st === 'watched'
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : (st === 'want' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30');
+                    const badgeIcon = st === 'watched' ? 'check-circle-2' : (st === 'want' ? 'clock' : 'ban');
+                    const badgeText = st === 'watched' ? 'Watched' : (st === 'want' ? 'Want' : 'Dropped');
+
+                    html += `<div class="flex gap-3.5 p-3 glass-card rounded-2xl items-center fade-in-list border-l-4" style="border-left-color: ${borderColor}">
+                        <img src="${item.image || FALLBACK_IMG}" loading="lazy" class="w-11 h-14 rounded-xl object-cover bg-slate-800 shrink-0 cursor-pointer" onclick="openCatalogModal('${item.id}')" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex flex-wrap items-center gap-1.5">
                                 <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">${item.mediaType || 'Title'}</span>
                                 ${item.year ? `<span class="text-[9px] text-slate-500 font-semibold">${item.year}</span>` : ''}
+                                ${item.rating ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300">${item.rating}</span>` : ''}
                             </div>
-                            <h4 class="font-bold text-sm truncate text-white mt-0.5">${item.name}</h4>
+                            <h4 onclick="openCatalogModal('${item.id}')" class="font-bold text-sm truncate text-white mt-0.5 cursor-pointer hover:text-purple-300">${item.name}</h4>
+                            ${item.note ? `<p class="text-[10px] text-slate-400 italic truncate mt-0.5">"${item.note}"</p>` : ''}
                             <div class="flex items-center gap-2 mt-1">
                                 <button onclick="openCatalogAppReassign('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800/90 text-slate-300 font-bold uppercase hover:border-purple-500/50 flex items-center gap-1">
                                     <i data-lucide="tv" class="w-2.5 h-2.5"></i> ${item.app}
                                 </button>
+                                <button onclick="openCatalogModal('${item.id}')" class="text-[9px] text-slate-500 hover:text-slate-300 font-bold">Edit Note</button>
                             </div>
                         </div>
-                        <button onclick="toggleCatalogItemStatus('${item.id}')" class="px-3 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 ${isWatched ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'}">
-                            <i data-lucide="${isWatched ? 'check-circle-2' : 'clock'}" class="w-3.5 h-3.5"></i>
-                            ${isWatched ? 'Watched' : 'Want'}
+                        <button onclick="cycleCatalogItemStatus('${item.id}')" class="px-2.5 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 border ${badgeStyle}">
+                            <i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i>
+                            ${badgeText}
                         </button>
                         <button onclick="removeCatalogItem('${item.id}')" class="p-1.5 text-slate-600 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>`;
@@ -871,6 +1374,60 @@
             });
 
             contentDiv.innerHTML = html;
+        }
+
+        // ==================== "PICK TONIGHT'S WATCH" RANDOMIZER ====================
+
+        function openRandomizer() {
+            document.getElementById('randomizerOverlay').classList.remove('hidden');
+            spinRandomizer();
+        }
+
+        function closeRandomizer() {
+            document.getElementById('randomizerOverlay').classList.add('hidden');
+        }
+
+        function setRandomizerFilter(type) {
+            randomizerTypeFilter = type;
+            ['all', 'Movie', 'TV Show'].forEach(t => {
+                const btn = document.getElementById(`randFilter-${t}`);
+                if (btn) btn.className = `px-3 py-1 rounded-lg text-[10px] font-bold ${t === type ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400'}`;
+            });
+            spinRandomizer();
+        }
+
+        function spinRandomizer() {
+            const pool = catalog.filter(c => {
+                if (c.status !== 'want') return false;
+                if (activeCatalogApp !== 'All' && c.app !== activeCatalogApp) return false;
+                if (randomizerTypeFilter !== 'all' && c.mediaType !== randomizerTypeFilter) return false;
+                return true;
+            });
+
+            const resDiv = document.getElementById('randomizerResult');
+            const launchBtn = document.getElementById('randomizerLaunchBtn');
+
+            if (pool.length === 0) {
+                resDiv.innerHTML = `<p class="text-xs text-slate-400 italic">No "Want to Watch" titles match this filter yet! Add some movies or shows as "Want to Watch" first.</p>`;
+                launchBtn.onclick = () => closeRandomizer();
+                return;
+            }
+
+            const winner = pool[Math.floor(Math.random() * pool.length)];
+            resDiv.innerHTML = `
+                <img src="${winner.image || FALLBACK_IMG}" class="w-16 h-24 object-cover rounded-xl shadow-md mb-2 bg-slate-800" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+                <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">${winner.app} • ${winner.mediaType || 'Title'}</span>
+                <h3 class="text-base font-extrabold text-white mt-1">${winner.name}</h3>
+                ${winner.note ? `<p class="text-[10px] text-slate-400 italic mt-1">"${winner.note}"</p>` : ''}
+            `;
+
+            launchBtn.onclick = () => {
+                const app = STREAMING_APPS.find(a => a.name === winner.app);
+                if (app && app.scheme) window.location.href = app.scheme;
+                else if (app && app.url) window.open(app.url, '_blank');
+                closeRandomizer();
+            };
+            lucide.createIcons();
         }
 
         function openCatalogAppReassign(id) {
@@ -910,16 +1467,14 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 const text = e.target.result;
-                const lines = text.split(/\r?\n/).slice(1); // Skip CSV header
+                const lines = text.split(/\r?\n/).slice(1);
                 const extractedTitles = new Set();
 
                 lines.forEach(line => {
                     if (!line.trim()) return;
-                    // Match quoted title or first comma column
                     const match = line.match(/^"([^"]+)"|^([^,]+)/);
                     let rawTitle = match ? (match[1] || match[2] || '').trim() : '';
                     if (!rawTitle) return;
-                    // Strip ": Season X..." or ": Limited Series..." or ": Part X..." to group TV shows cleanly
                     const cleanShow = rawTitle.split(/:\s*(?:Season|Series|Limited Series|Part|Volume|Book|Chapter|Episode)\b/i)[0].trim();
                     if (cleanShow.length > 1) extractedTitles.add(cleanShow);
                 });
@@ -935,6 +1490,8 @@
                             mediaType: 'Title',
                             app: 'Netflix',
                             status: 'watched',
+                            rating: '',
+                            note: '',
                             year: '',
                             addedAt: Date.now()
                         });
@@ -973,6 +1530,8 @@
                         mediaType: 'Title',
                         app: app,
                         status: status,
+                        rating: '',
+                        note: '',
                         year: '',
                         addedAt: Date.now()
                     });
@@ -987,7 +1546,7 @@
             showToast(`Added ${added} titles to ${app}!`);
         }
 
-        // ==================== TV & YOUTUBE SYNC ====================
+        // ==================== TV & YOUTUBE SYNC (WITH EMBEDDED SHOW STATUS) ====================
 
         async function refreshTVData(forceAll = false) {
             if (isRefreshingTV) return;
@@ -998,9 +1557,11 @@
 
             const now = Date.now();
             const historyLimit = now - (settings.feedDays * 86400000);
+            const sevenDaysAhead = now + (7 * 86400000);
             const tvItems = watchlist.filter(i => i.type === 'tv');
 
             let tempQueue = [];
+            let tempUpcoming = [];
             let dataChanged = false;
 
             const itemsToFetch = tvItems.filter(item => {
@@ -1019,28 +1580,48 @@
 
                 await Promise.all(batch.map(async (item) => {
                     try {
-                        const res = await fetchWithRetry(`https://api.tvmaze.com/shows/${item.id}/episodes`);
+                        // Fetch show info + episodes in 1 call so renewal/cancel status stays live
+                        const res = await fetchWithRetry(`https://api.tvmaze.com/shows/${item.id}?embed=episodes`);
                         if (!res.ok) return;
-                        const eps = await res.json();
+                        const showData = await res.json();
+                        const eps = showData?._embedded?.episodes || [];
+
+                        if (showData.status && item.showStatus !== showData.status) {
+                            item.showStatus = showData.status;
+                            dataChanged = true;
+                        }
                         
                         if (Array.isArray(eps)) {
                             const watchedSingles = item.watchedEpIds || [];
-                            eps.filter(e => {
-                                if (!e.airstamp) return false;
+                            eps.forEach(e => {
+                                if (!e.airstamp) return;
                                 const t = new Date(e.airstamp).getTime();
-                                return t <= now && t >= historyLimit && t > (item.lastWatchedAirstamp || 0) && !watchedSingles.includes(e.id);
-                            }).forEach(e => {
-                                tempQueue.push({
-                                    epId: e.id,
-                                    itemId: item.id,
-                                    showName: item.name,
-                                    tvApp: item.tvApp || 'Default',
-                                    title: `S${String(e.season).padStart(2,'0')}E${String(e.number).padStart(2,'0')}: ${e.name}`,
-                                    date: e.airstamp,
-                                    url: item.officialSite || e.url,
-                                    thumb: e.image?.medium || item.image || FALLBACK_IMG,
-                                    summary: (e.summary || 'No episode summary available.').replace(/<[^>]*>?/gm, '')
-                                });
+                                // Unwatched past episodes within window
+                                if (t <= now && t >= historyLimit && t > (item.lastWatchedAirstamp || 0) && !watchedSingles.includes(e.id)) {
+                                    tempQueue.push({
+                                        epId: e.id,
+                                        itemId: item.id,
+                                        showName: item.name,
+                                        tvApp: item.tvApp || 'Default',
+                                        title: `S${String(e.season).padStart(2,'0')}E${String(e.number).padStart(2,'0')}: ${e.name}`,
+                                        date: e.airstamp,
+                                        url: item.officialSite || showData.officialSite || e.url,
+                                        thumb: e.image?.medium || item.image || FALLBACK_IMG,
+                                        summary: (e.summary || 'No episode summary available.').replace(/<[^>]*>?/gm, '')
+                                    });
+                                }
+                                // Upcoming episodes within next 7 days for Calendar Strip
+                                if (t >= now - 43200000 && t <= sevenDaysAhead) {
+                                    tempUpcoming.push({
+                                        epId: e.id,
+                                        itemId: item.id,
+                                        showName: item.name,
+                                        epCode: `S${e.season}E${e.number}`,
+                                        title: e.name,
+                                        date: e.airstamp,
+                                        thumb: item.image || FALLBACK_IMG
+                                    });
+                                }
                             });
                             
                             const nextEp = eps.find(e => e.airstamp && new Date(e.airstamp).getTime() > now);
@@ -1065,7 +1646,9 @@
             }
 
             tvQueue = tempQueue;
+            upcomingQueue = tempUpcoming.sort((a, b) => new Date(a.date) - new Date(b.date));
             localStorage.setItem(CACHE_TV_KEY, JSON.stringify(tvQueue));
+            localStorage.setItem(CACHE_UPCOMING_KEY, JSON.stringify(upcomingQueue));
             syncMeta.lastTvSync = Date.now();
             localStorage.setItem(SYNC_META_KEY, JSON.stringify(syncMeta));
 
@@ -1225,6 +1808,41 @@
             closeAppSelector();
         }
 
+        function handleQueueItemClick(type, itemId, epId, url, epDateMs, title) {
+            if (settings.autoMarkWatched) {
+                markWatched(itemId, epDateMs);
+            }
+            if (type === 'youtube' && settings.inAppYouTube) {
+                openYtPlayer(epId, itemId, epDateMs, title, url);
+                return;
+            }
+            if (type === 'tv') {
+                launchApp(itemId, url);
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        function openYtPlayer(videoId, itemId, epDateMs, title, rawUrl) {
+            document.getElementById('ytPlayerTitle').innerText = title || 'YouTube Video';
+            document.getElementById('ytPlayerIframe').src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
+            document.getElementById('ytPlayerExternalBtn').onclick = () => {
+                closeYtPlayer();
+                window.open(rawUrl, '_blank');
+            };
+            document.getElementById('ytPlayerWatchedBtn').onclick = () => {
+                markWatched(itemId, epDateMs);
+                closeYtPlayer();
+            };
+            document.getElementById('ytPlayerOverlay').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeYtPlayer() {
+            document.getElementById('ytPlayerIframe').src = '';
+            document.getElementById('ytPlayerOverlay').classList.add('hidden');
+        }
+
         function launchApp(appId, originalUrl) {
             const item = watchlist.find(i => i.id == appId);
             const appName = item ? (item.tvApp || 'Default') : 'Default';
@@ -1271,23 +1889,29 @@
             const tvApp = item.tvApp || 'Default';
             const themeColor = settings.theme || '#8b5cf6';
             const themeBg = themeColor + '26'; 
-            const isEnded = isTV && item.showStatus === 'Ended' && !item.nextAirDate;
             const inCatalog = catalog.find(c => String(c.id) === String(item.id));
+
+            const statusState = isTV ? getComputedShowStatus(item) : null;
+            const statusBadge = isTV ? getStatusBadgeMetadata(statusState) : null;
             
             return `<div class="flex gap-3.5 p-3.5 glass-card rounded-2xl items-center relative fade-in-list">
                 <img src="${item.image || FALLBACK_IMG}" loading="lazy" class="w-12 h-12 ${isYT ? 'rounded-full' : 'rounded-xl'} object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-sm truncate pr-8">${item.name}</h3>
+                    <div class="flex items-center gap-1.5 pr-8">
+                        <h3 class="font-bold text-sm truncate">${item.name}</h3>
+                    </div>
                     <div class="flex flex-wrap items-center gap-1.5 mt-1">
                         <button onclick="reAddLast('${item.id}', '${item.type}')" class="text-slate-400 p-1 hover:text-white transition-colors" title="Re-add latest release"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
                         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">${item.platform || ''}</span>
-                        ${isEnded ? `<span class="text-[8px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-bold uppercase">Ended</span>` : ''}
+                        ${isTV && statusBadge ? `<button onclick="cycleManualShowStatus('${item.id}')" title="Tap to override show status" class="text-[8px] px-1.5 py-0.5 rounded border font-extrabold uppercase flex items-center gap-1 ${statusBadge.classes}">
+                            <i data-lucide="${statusBadge.icon}" class="w-2.5 h-2.5"></i> ${statusBadge.label}
+                        </button>` : ''}
                         ${isYT ? `<button onclick="cycleYtPref('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800 text-slate-300 font-bold uppercase hover:border-purple-500/50">${prefLabel}</button>` : ''}
                         ${isTV ? `<button onclick="openAppSelector('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800 text-slate-300 font-bold uppercase hover:border-purple-500/50 flex items-center gap-1">
                             <i data-lucide="tv" class="w-2.5 h-2.5"></i> ${tvApp}
                         </button>
                         <button onclick="openCatalogModal('${item.id}', 'watched')" class="text-[9px] px-2 py-0.5 rounded-md border ${inCatalog ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-800 text-slate-400'} font-bold uppercase flex items-center gap-1">
-                            <i data-lucide="bookmark-check" class="w-2.5 h-2.5"></i> ${inCatalog ? (inCatalog.status === 'watched' ? 'Watched' : 'In Catalog') : '+ Catalog'}
+                            <i data-lucide="bookmark-check" class="w-2.5 h-2.5"></i> ${inCatalog ? (inCatalog.status === 'watched' ? 'Watched' : (inCatalog.status === 'dropped' ? 'Dropped' : 'In Catalog')) : '+ Catalog'}
                         </button>` : ''}
                     </div>
                     ${isTV && item.nextAirDate ? `
@@ -1330,17 +1954,20 @@
                 }
                 
                 const safeUrl = (q.url || '').replace(/'/g, "\\'");
+                const safeTitle = (q.title || '').replace(/'/g, "\\'");
+                const epTimeMs = new Date(q.date).getTime();
+
                 html += `
                 <div class="glass-card rounded-2xl overflow-hidden border-l-4 fade-in-list" style="border-left-color: ${type === 'tv' ? '#ec4899' : '#ef4444'}">
                     <div class="flex items-center gap-3.5 p-3">
                         <img src="${q.thumb || FALLBACK_IMG}" loading="lazy" class="w-20 h-12 object-cover rounded-lg bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
-                        <div onclick="${type === 'tv' ? `launchApp('${q.itemId}', '${safeUrl}')` : `window.open('${safeUrl}', '_blank')`}" class="flex-1 min-w-0 block active:opacity-70 cursor-pointer">
+                        <div onclick="handleQueueItemClick('${type}', '${q.itemId}', '${q.epId}', '${safeUrl}', ${epTimeMs}, '${safeTitle}')" class="flex-1 min-w-0 block active:opacity-70 cursor-pointer">
                             <p class="text-[9px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">${type === 'tv' ? (q.tvApp || 'TV') : 'YouTube'} • ${new Date(q.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</p>
                             <h4 class="font-bold text-sm truncate text-white">${q.showName}</h4>
                             <p class="text-xs text-slate-300 truncate">${q.title}</p>
                         </div>
                         ${type === 'tv' ? `<button onclick="openEpDetail('${q.epId}')" class="p-2.5 text-slate-400 hover:text-white rounded-xl transition-colors" title="Episode Info"><i data-lucide="info" class="w-5 h-5"></i></button>` : ''}
-                        <button onclick="markWatched('${q.itemId}', ${new Date(q.date).getTime()})" class="p-2.5 bg-slate-800/90 hover:bg-slate-700 rounded-xl active:scale-90 transition-transform" title="Mark Watched"><i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i></button>
+                        <button onclick="markWatched('${q.itemId}', ${epTimeMs})" class="p-2.5 bg-slate-800/90 hover:bg-slate-700 rounded-xl active:scale-90 transition-transform" title="Mark Watched"><i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i></button>
                     </div>
                 </div>`;
             });
@@ -1526,6 +2153,16 @@
             showToast(`Feed window set to ${d} days`);
         }
 
+        function toggleAutoWatch(val) {
+            settings.autoMarkWatched = !!val;
+            saveSettings(true);
+        }
+
+        function toggleInAppYt(val) {
+            settings.inAppYouTube = !!val;
+            saveSettings(true);
+        }
+
         function updateSettingsUI() {
             [7, 14, 30].forEach(d => {
                 const btn = document.getElementById(`btn-days-${d}`);
@@ -1548,14 +2185,18 @@
         }
 
         function toggleSettings() { 
-            document.getElementById('settingsOverlay').classList.toggle('hidden'); 
-            const fld = document.getElementById('stat-followed');
-            const wtd = document.getElementById('stat-watched');
-            const cat = document.getElementById('stat-catalog');
-            if (fld) fld.innerText = watchlist.length; 
-            if (wtd) wtd.innerText = settings.lifetimeWatched || 0; 
-            if (cat) cat.innerText = catalog.length;
-            updateSettingsUI();
+            const overlay = document.getElementById('settingsOverlay');
+            overlay.classList.toggle('hidden'); 
+            if (!overlay.classList.contains('hidden')) {
+                const fld = document.getElementById('stat-followed');
+                const wtd = document.getElementById('stat-watched');
+                const cat = document.getElementById('stat-catalog');
+                if (fld) fld.innerText = watchlist.length; 
+                if (wtd) wtd.innerText = settings.lifetimeWatched || 0; 
+                if (cat) cat.innerText = catalog.length;
+                renderSubscriptionsManager();
+                updateSettingsUI();
+            }
         }
 
         function clearSearch() {
@@ -1574,7 +2215,12 @@
         function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist)); }
         function saveSettings(silent) { 
             const input = document.getElementById('ytApiKeyInput');
-            if (input) settings.ytApiKey = input.value;
+            if (input) settings.ytApiKey = input.value.trim();
+            const gToken = document.getElementById('gistTokenInput');
+            if (gToken) settings.gistToken = gToken.value.trim();
+            const gId = document.getElementById('gistIdInput');
+            if (gId) settings.gistId = gId.value.trim();
+
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); 
             if (!silent) { toggleSettings(); refreshUI(); refreshTVData(false); } 
         }
@@ -1670,19 +2316,21 @@
                 showStatus: status
             };
 
+            const statusLabel = type === 'tv' ? (status === 'Ended' ? ' • Ended/Canceled' : (status === 'To Be Determined' ? ' • TBD/Bubble' : ' • Running')) : '';
+
             return `<div class="flex gap-4 p-3 glass-card rounded-2xl items-center">
                 <img src="${imgUrl}" loading="lazy" class="w-12 h-16 rounded-lg object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-sm truncate">${s.name}</h4>
-                    <p class="text-[10px] text-slate-400 truncate">${platform}${year ? ` • ${year}` : ''}${type === 'tv' && status === 'Ended' ? ' • Ended' : ''}</p>
+                    <p class="text-[10px] text-slate-400 truncate">${platform}${year ? ` • ${year}` : ''}${statusLabel}</p>
                     <div class="flex flex-wrap gap-1.5 mt-2">
                         ${type !== 'movie' ? `
                         <button onclick="toggleFollow('${s.id}')" class="text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all" style="background-color: ${isAdded ? '#334155' : themeColor}; color: ${isAdded ? '#94a3b8' : 'white'}">
                             ${isAdded ? 'Tracking Eps' : '+ Track Eps'}
                         </button>` : ''}
                         ${type !== 'youtube' ? `
-                        <button onclick="openCatalogModal('${s.id}', 'watched')" class="text-[10px] px-3 py-1.5 rounded-lg font-bold border transition-all ${catItem ? (catItem.status === 'watched' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/20 border-amber-500/40 text-amber-300') : 'bg-slate-800 border-slate-700 text-slate-300'}">
-                            ${catItem ? `${catItem.status === 'watched' ? '✓ Watched' : '🕒 Want'} (${catItem.app})` : '+ Catalog / Watched'}
+                        <button onclick="openCatalogModal('${s.id}', 'watched')" class="text-[10px] px-3 py-1.5 rounded-lg font-bold border transition-all ${catItem ? (catItem.status === 'watched' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : (catItem.status === 'dropped' ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-amber-500/20 border-amber-500/40 text-amber-300')) : 'bg-slate-800 border-slate-700 text-slate-300'}">
+                            ${catItem ? `${catItem.status === 'watched' ? '✓ Watched' : (catItem.status === 'dropped' ? '🚫 Dropped' : '🕒 Want')} (${catItem.app})` : '+ Catalog / Watched'}
                         </button>` : ''}
                     </div>
                 </div>
@@ -1719,9 +2367,131 @@
             performSearch(document.getElementById('searchInput').value); 
         }
 
+        // ==================== FILE BACKUP & GITHUB GIST CLOUD SYNC ====================
+
+        function getFullBackupPayload() {
+            return { watchlist, catalog, subscriptions, settings, exportedAt: new Date().toISOString() };
+        }
+
+        function applyFullBackupPayload(d) {
+            if (Array.isArray(d.watchlist)) watchlist = d.watchlist;
+            if (Array.isArray(d.catalog)) catalog = d.catalog;
+            if (d.subscriptions && typeof d.subscriptions === 'object') subscriptions = d.subscriptions;
+            if (d.settings && typeof d.settings === 'object') {
+                const keepToken = settings.gistToken;
+                const keepGistId = settings.gistId;
+                settings = { ...settings, ...d.settings };
+                if (keepToken && !settings.gistToken) settings.gistToken = keepToken;
+                if (keepGistId && !settings.gistId) settings.gistId = keepGistId;
+            }
+            saveData();
+            saveCatalog();
+            saveSubscriptions();
+            saveSettings(true);
+            refreshTVData(true);
+        }
+
+        function downloadBackupFile() {
+            const blob = new Blob([JSON.stringify(getFullBackupPayload(), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `showtrack-backup-${getLocalDateKey(new Date())}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Backup .JSON downloaded!");
+        }
+
+        function uploadBackupFile(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    applyFullBackupPayload(d);
+                    showToast("Backup file restored!");
+                } catch (err) {
+                    showToast("Invalid .JSON backup file.");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        async function pushToGist() {
+            saveSettings(true);
+            if (!settings.gistToken) {
+                showToast("Enter a GitHub Token first.");
+                return;
+            }
+            showToast("Pushing to GitHub Gist...");
+            const body = {
+                description: "ShowTrack Personal Cloud Sync Backup",
+                public: false,
+                files: {
+                    "showtrack_sync.json": {
+                        content: JSON.stringify(getFullBackupPayload(), null, 2)
+                    }
+                }
+            };
+
+            try {
+                const url = settings.gistId ? `https://api.github.com/gists/${settings.gistId}` : `https://api.github.com/gists`;
+                const method = settings.gistId ? 'PATCH' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${settings.gistToken}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Gist push failed');
+                if (data.id && data.id !== settings.gistId) {
+                    settings.gistId = data.id;
+                    document.getElementById('gistIdInput').value = data.id;
+                    saveSettings(true);
+                }
+                showToast("Cloud Sync Push complete!");
+            } catch (e) {
+                showToast(`Cloud Push Error: ${e.message}`);
+            }
+        }
+
+        async function pullFromGist() {
+            saveSettings(true);
+            if (!settings.gistToken || !settings.gistId) {
+                showToast("Enter both GitHub Token & Gist ID.");
+                return;
+            }
+            showToast("Pulling from GitHub Gist...");
+            try {
+                const res = await fetch(`https://api.github.com/gists/${settings.gistId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${settings.gistToken}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Gist pull failed');
+                const fileContent = data.files?.["showtrack_sync.json"]?.content;
+                if (!fileContent) throw new Error("No showtrack_sync.json found in Gist");
+                applyFullBackupPayload(JSON.parse(fileContent));
+                renderSubscriptionsManager();
+                showToast("Cloud Sync Pull complete!");
+            } catch (e) {
+                showToast(`Cloud Pull Error: ${e.message}`);
+            }
+        }
+
         function exportData() {
-            navigator.clipboard.writeText(JSON.stringify({ watchlist, catalog, settings }));
-            showToast("Backup (including Catalog) copied!");
+            navigator.clipboard.writeText(JSON.stringify(getFullBackupPayload()));
+            showToast("Full backup copied to clipboard!");
         }
 
         function importData() { 
@@ -1729,13 +2499,7 @@
             if (p) { 
                 try {
                     const d = JSON.parse(p); 
-                    watchlist = d.watchlist || [];
-                    if (Array.isArray(d.catalog)) catalog = d.catalog;
-                    settings = { ...settings, ...(d.settings || {}) }; 
-                    saveData();
-                    saveCatalog();
-                    saveSettings(true);
-                    refreshTVData(true);
+                    applyFullBackupPayload(d);
                     showToast("Backup restored! Syncing shows...");
                 } catch(e) {
                     showToast("Invalid backup data.");
