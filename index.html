@@ -1227,18 +1227,22 @@
 
         function saveSubModal() {
             if (!activeSubEditApp) return;
-            subscriptions[activeSubEditApp] = {
-                active: document.getElementById('subModalActive').checked,
+            const appName = activeSubEditApp;
+            const isNowActive = document.getElementById('subModalActive').checked;
+
+            subscriptions[appName] = {
+                active: isNowActive,
                 cycle: document.getElementById('subModalCycle').value,
                 cost: document.getElementById('subModalCost').value.trim(),
                 renewDate: document.getElementById('subModalDate').value,
                 promo: document.getElementById('subModalPromo').checked,
                 note: document.getElementById('subModalNote').value.trim()
             };
+
             saveSubscriptions();
             renderSubscriptionsManager();
             closeSubModal();
-            showToast(`Updated ${activeSubEditApp} subscription`);
+            showToast(isNowActive ? `Saved ${appName} subscription` : `Removed ${appName} from active subs`);
         }
 
         function bumpSubRenewal(appName) {
