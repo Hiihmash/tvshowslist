@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mash's ShowTrack 1</title>
+    <title>Mash's ShowTrack</title>
     <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#8b5cf6">
@@ -39,6 +39,7 @@
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .loader {
             border: 3px solid rgba(255, 255, 255, 0.1);
@@ -97,14 +98,14 @@
     <!-- Header -->
     <header class="sticky top-0 z-50 glass-card px-5 py-3.5 flex justify-between items-center border-b border-slate-800">
         <div>
-            <h1 class="text-lg font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Mash's ShowTracker 1</h1>
+            <h1 class="text-lg font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Mash's ShowTracker</h1>
             <p id="syncStatusText" class="text-[9px] text-slate-500 font-semibold">Ready</p>
         </div>
         <div class="flex gap-1 items-center">
             <button onclick="manualTabRefresh(true)" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Force Refresh Data">
                 <i id="refreshIcon" data-lucide="refresh-cw" class="w-5 h-5"></i>
             </button>
-            <button onclick="toggleSearch()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Add Shows">
+            <button onclick="toggleSearch()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Search & Add">
                 <i data-lucide="plus" class="w-6 h-6"></i>
             </button>
             <button onclick="toggleSettings()" class="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400" title="Settings">
@@ -116,16 +117,20 @@
     <!-- Tab Navigation -->
     <nav class="sticky top-[61px] z-40 bg-slate-950/85 backdrop-blur-md flex border-b border-slate-800">
         <button onclick="switchTab('watchlist')" id="tab-watchlist" class="relative flex-1 py-3.5 text-[10px] font-bold transition-all flex flex-col items-center gap-1 tab-active">
-            <i data-lucide="layers" class="w-4 h-4"></i> WATCHLIST
-            <span id="badge-watchlist" class="absolute top-2 right-1/2 translate-x-9 text-[9px] bg-slate-800 px-1.5 py-0.2 rounded-full text-slate-400">0</span>
+            <i data-lucide="layers" class="w-4 h-4"></i> TRACKING
+            <span id="badge-watchlist" class="absolute top-1.5 right-1/2 translate-x-8 text-[8px] bg-slate-800 px-1.5 py-0.2 rounded-full text-slate-400">0</span>
         </button>
         <button onclick="switchTab('tv')" id="tab-tv" class="relative flex-1 py-3.5 text-[10px] font-bold transition-all flex flex-col items-center gap-1 text-slate-500">
-            <i data-lucide="monitor" class="w-4 h-4"></i> TV
-            <span id="badge-tv" class="hidden absolute top-2 right-1/2 translate-x-7 text-[9px] bg-pink-600 px-1.5 py-0.2 rounded-full text-white font-bold">0</span>
+            <i data-lucide="monitor" class="w-4 h-4"></i> TV FEED
+            <span id="badge-tv" class="hidden absolute top-1.5 right-1/2 translate-x-7 text-[8px] bg-pink-600 px-1.5 py-0.2 rounded-full text-white font-bold">0</span>
         </button>
         <button onclick="switchTab('youtube')" id="tab-youtube" class="relative flex-1 py-3.5 text-[10px] font-bold transition-all flex flex-col items-center gap-1 text-slate-500">
             <i data-lucide="play" class="w-4 h-4"></i> YOUTUBE
-            <span id="badge-yt" class="hidden absolute top-2 right-1/2 translate-x-9 text-[9px] bg-red-600 px-1.5 py-0.2 rounded-full text-white font-bold">0</span>
+            <span id="badge-yt" class="hidden absolute top-1.5 right-1/2 translate-x-8 text-[8px] bg-red-600 px-1.5 py-0.2 rounded-full text-white font-bold">0</span>
+        </button>
+        <button onclick="switchTab('catalog')" id="tab-catalog" class="relative flex-1 py-3.5 text-[10px] font-bold transition-all flex flex-col items-center gap-1 text-slate-500">
+            <i data-lucide="bookmark-check" class="w-4 h-4"></i> CATALOG
+            <span id="badge-catalog" class="absolute top-1.5 right-1/2 translate-x-8 text-[8px] bg-slate-800 px-1.5 py-0.2 rounded-full text-slate-400">0</span>
         </button>
     </nav>
 
@@ -135,22 +140,90 @@
             <button onclick="toggleSearch()" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i></button>
             <div class="flex-1 flex bg-slate-800 rounded-xl p-1">
                 <button id="searchTypeTV" onclick="setSearchType('tv')" class="flex-1 py-2 text-xs font-bold rounded-lg search-type-active">TV Shows</button>
+                <button id="searchTypeMovie" onclick="setSearchType('movie')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400">Movies</button>
                 <button id="searchTypeYT" onclick="setSearchType('youtube')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400">YouTube</button>
             </div>
         </div>
         <div class="relative mb-5">
-            <input type="text" id="searchInput" placeholder="Search TV shows or YouTube channels..." class="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none pr-10 text-sm">
+            <input type="text" id="searchInput" placeholder="Search TV shows, movies, or channels..." class="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none pr-10 text-sm">
             <button onclick="clearSearch()" class="absolute right-3 top-3 text-slate-500"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
         </div>
         <div id="searchResults" class="flex-1 overflow-y-auto space-y-3 no-scrollbar"></div>
     </div>
 
-    <!-- App Selector Overlay -->
-    <div id="appSelectorOverlay" class="fixed inset-0 z-[70] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center">
+    <!-- App Selector Overlay (For Watchlist / Catalog Reassignment) -->
+    <div id="appSelectorOverlay" class="fixed inset-0 z-[70] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center" onclick="if(event.target===this) closeAppSelector()">
         <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative">
             <button onclick="closeAppSelector()" class="absolute top-4 right-4 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             <h2 class="text-base font-bold mb-4 text-center">Select Streaming App</h2>
             <div id="appSelectorList" class="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto no-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- Quick Catalog Add / Edit Modal -->
+    <div id="catalogModalOverlay" class="fixed inset-0 z-[75] bg-slate-950/90 hidden p-6 flex flex-col justify-center items-center" onclick="if(event.target===this) closeCatalogModal()">
+        <div class="glass-card w-full max-w-sm rounded-3xl p-6 relative space-y-4">
+            <button onclick="closeCatalogModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="flex gap-3 items-center pr-6">
+                <img id="catModalImg" src="" class="w-12 h-16 object-cover rounded-xl bg-slate-800 shrink-0">
+                <div class="min-w-0">
+                    <span id="catModalType" class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-slate-800 text-purple-400"></span>
+                    <h3 id="catModalTitle" class="text-sm font-extrabold text-white truncate mt-1"></h3>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">1. Status</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="catStatusWatchedBtn" onclick="setCatModalStatus('watched')" class="py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Already Watched
+                    </button>
+                    <button id="catStatusWantBtn" onclick="setCatModalStatus('want')" class="py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all">
+                        <i data-lucide="clock" class="w-4 h-4"></i> Want to Watch
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">2. Streaming App</label>
+                <div id="catModalAppGrid" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto no-scrollbar"></div>
+            </div>
+
+            <button onclick="confirmCatalogModal()" class="w-full bg-purple-600 py-3 rounded-2xl font-bold text-xs text-white btn-action shadow-lg">Save to Catalog</button>
+        </div>
+    </div>
+
+    <!-- Bulk Import / Netflix CSV Modal -->
+    <div id="bulkImportOverlay" class="fixed inset-0 z-[75] bg-slate-950/95 hidden p-5 flex flex-col justify-center items-center" onclick="if(event.target===this) closeBulkImportModal()">
+        <div class="glass-card w-full max-w-md rounded-3xl p-6 relative space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button onclick="closeBulkImportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 class="text-base font-extrabold">Import App Watchlist / History</h2>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+                Streaming apps don't allow direct logins from third-party sites, but you can bulk-import your history or watchlists in seconds:
+            </p>
+
+            <!-- Option A: Netflix Viewing Activity CSV -->
+            <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-red-400 flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Netflix Viewing History (.CSV)</span>
+                </div>
+                <p class="text-[10px] text-slate-400">Download your CSV from <b>netflix.com/viewingactivity</b> (bottom of page) and select it here. Episodes are automatically grouped into their main show title!</p>
+                <input type="file" id="netflixCsvInput" accept=".csv" onchange="handleNetflixCsvUpload(event)" class="block w-full text-[11px] text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-red-600/20 file:text-red-400 hover:file:bg-red-600/30 cursor-pointer">
+            </div>
+
+            <!-- Option B: Quick Paste List -->
+            <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-3">
+                <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5"><i data-lucide="list-plus" class="w-4 h-4"></i> Paste List of Titles (One per line)</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="bulkAppSelect" class="bg-slate-800 text-xs font-bold text-white rounded-xl px-3 py-2 border border-slate-700 outline-none"></select>
+                    <select id="bulkStatusSelect" class="bg-slate-800 text-xs font-bold text-white rounded-xl px-3 py-2 border border-slate-700 outline-none">
+                        <option value="watched">Mark as Watched</option>
+                        <option value="want">Mark as Want to Watch</option>
+                    </select>
+                </div>
+                <textarea id="bulkTextInput" rows="4" placeholder="Severance&#10;The Bear&#10;Dune: Part Two&#10;Fallout" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500"></textarea>
+                <button onclick="processBulkTextImport()" class="w-full bg-purple-600 py-2.5 rounded-xl font-bold text-xs text-white btn-action">Add Titles to Catalog</button>
+            </div>
         </div>
     </div>
 
@@ -178,7 +251,7 @@
     <div id="settingsOverlay" class="fixed inset-0 z-[60] bg-slate-950/95 hidden p-6 flex flex-col overflow-y-auto no-scrollbar">
         <div class="flex items-center gap-4 mb-6">
             <button onclick="toggleSettings()" class="p-2"><i data-lucide="arrow-left" class="w-6 h-6 text-slate-400"></i></button>
-            <h2 class="text-xl font-bold">Settings</h2>
+            <h2 class="text-xl font-bold">Settings <span class="text-xs font-normal text-slate-500 ml-1">v4.2</span></h2>
         </div>
         <div class="space-y-6 max-w-lg mx-auto w-full">
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50">
@@ -201,9 +274,11 @@
             </section>
 
             <section class="p-4 border border-slate-800 rounded-2xl bg-slate-900/50 flex justify-around text-center">
-                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Followed</p><p id="stat-followed" class="text-xl font-black text-white">0</p></div>
+                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Tracking</p><p id="stat-followed" class="text-xl font-black text-white">0</p></div>
                 <div class="w-px bg-slate-800"></div>
-                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Watched</p><p id="stat-watched" class="text-xl font-black text-white">0</p></div>
+                <div><p class="text-[10px] font-bold text-slate-500 uppercase">Eps Watched</p><p id="stat-watched" class="text-xl font-black text-white">0</p></div>
+                <div class="w-px bg-slate-800"></div>
+                <div><p class="text-[10px] font-bold text-slate-500 uppercase">In Catalog</p><p id="stat-catalog" class="text-xl font-black text-white">0</p></div>
             </section>
 
             <section>
@@ -221,7 +296,7 @@
 
     <!-- Main Content Area -->
     <main class="p-4 lg:p-8 max-w-2xl mx-auto">
-        <!-- Watchlist Section -->
+        <!-- 1. Episode Tracking Watchlist Section -->
         <section id="section-watchlist" class="space-y-2">
             <div id="watchlist-header" class="flex justify-between items-center hidden mb-2 px-1">
                 <div class="flex items-center gap-2">
@@ -237,19 +312,19 @@
                 </button>
             </div>
             <div id="watchlistFilterBar" class="hidden mb-4">
-                <input type="text" id="watchlistFilterInput" oninput="updateWatchlistFilter()" placeholder="Filter your watchlist..." class="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500">
+                <input type="text" id="watchlistFilterInput" oninput="updateWatchlistFilter()" placeholder="Filter tracked shows & channels..." class="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500">
             </div>
             <div id="watchlist-content" class="space-y-2"></div>
             <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-slate-500">
                 <i data-lucide="tv" class="w-12 h-12 mb-4 opacity-20"></i>
-                <p class="text-sm mb-6">No shows or channels followed yet.</p>
+                <p class="text-sm mb-6">No shows or channels tracked yet.</p>
                 <button onclick="toggleSearch()" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95">
                     <i data-lucide="plus" class="w-4 h-4"></i> Add First Item
                 </button>
             </div>
         </section>
 
-        <!-- TV Releases Section -->
+        <!-- 2. TV Releases Section -->
         <section id="section-tv" class="hidden space-y-4">
             <div id="tv-header" class="flex justify-between items-center hidden">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unwatched Episodes</p>
@@ -258,7 +333,7 @@
             <div id="tvQueue" class="flex flex-col gap-3"></div>
         </section>
 
-        <!-- YouTube Releases Section -->
+        <!-- 3. YouTube Releases Section -->
         <section id="section-youtube" class="hidden space-y-4">
             <div id="yt-header" class="flex justify-between items-center hidden">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">YouTube Feed</p>
@@ -274,6 +349,44 @@
             </div>
             <div id="ytQueue" class="flex flex-col gap-3"></div>
         </section>
+
+        <!-- 4. Streaming App Catalog / Watched Vault Section -->
+        <section id="section-catalog" class="hidden space-y-3">
+            <!-- Top Actions Bar -->
+            <div class="flex justify-between items-center px-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Streaming App Vault</p>
+                <div class="flex gap-1.5">
+                    <button onclick="openBulkImportModal()" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1">
+                        <i data-lucide="file-up" class="w-3 h-3"></i> Import List / CSV
+                    </button>
+                    <button onclick="toggleSearch()" class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl bg-purple-600 text-white flex items-center gap-1">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Add Title
+                    </button>
+                </div>
+            </div>
+
+            <!-- Horizontal App Filter Bar -->
+            <div id="catalogAppTabs" class="flex gap-1.5 overflow-x-auto no-scrollbar py-1"></div>
+
+            <!-- Status Filter Pills & Search Input -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <div class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button id="catFilter-all" onclick="setCatalogStatusFilter('all')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-slate-800 text-white transition-all">All</button>
+                    <button id="catFilter-watched" onclick="setCatalogStatusFilter('watched')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Watched
+                    </button>
+                    <button id="catFilter-want" onclick="setCatalogStatusFilter('want')" class="flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg text-slate-400 transition-all flex items-center justify-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Want to Watch
+                    </button>
+                </div>
+                <div class="relative flex-1">
+                    <input type="text" id="catalogSearchInput" oninput="updateCatalogSearch()" placeholder="Check if you've watched a movie or show..." class="w-full bg-slate-800/60 border border-slate-700/60 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-purple-500">
+                </div>
+            </div>
+
+            <!-- Catalog List -->
+            <div id="catalogContent" class="space-y-2 pt-1"></div>
+        </section>
     </main>
 
     <!-- Toast with optional Undo -->
@@ -284,12 +397,12 @@
 
     <script>
         const STORAGE_KEY = 'showtrack_v3_data';
+        const CATALOG_KEY = 'showtrack_catalog_v1';
         const SETTINGS_KEY = 'showtrack_settings';
         const CACHE_TV_KEY = 'showtrack_tv_cache_v4';
         const CACHE_YT_KEY = 'showtrack_yt_cache_v4';
         const SYNC_META_KEY = 'showtrack_sync_meta_v4';
 
-        // Offline-proof instant SVG fallback image
         const FALLBACK_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='160' viewBox='0 0 120 160'><rect width='100%' height='100%' fill='%231e293b'/><text x='50%' y='50%' fill='%2364748b' font-family='sans-serif' font-size='12' text-anchor='middle' dy='.3em'>No Image</text></svg>";
         
         const STREAMING_APPS = [
@@ -305,26 +418,49 @@
             { name: 'Crunchyroll', url: 'https://www.crunchyroll.com', scheme: 'crunchyroll://' },
             { name: 'Discovery+', url: 'https://www.discoveryplus.com', scheme: 'discoveryplus://' },
             { name: 'PBS', url: 'https://www.pbs.org', scheme: 'pbsvideo://' },
-            { name: 'Hallmark+', url: 'https://www.hallmarkplus.com', scheme: 'hallmarkplus://' }
+            { name: 'Hallmark+', url: 'https://www.hallmarkplus.com', scheme: 'hallmarkplus://' },
+            { name: 'Other', url: '', scheme: '' }
         ];
 
-        let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null, toastTimer = null;
+        let activeTab = 'watchlist', searchType = 'tv', searchTimeout = null, activeSelectorId = null, selectorMode = 'watchlist', toastTimer = null;
         let undoSnapshot = null;
         let isRefreshingTV = false;
+        let searchMap = {};
+
+        // Catalog state
+        let catalog = JSON.parse(localStorage.getItem(CATALOG_KEY) || '[]');
+        let activeCatalogApp = 'All';
+        let activeCatalogStatus = 'all'; // 'all' | 'watched' | 'want'
+        let catalogSearchQuery = '';
+        let pendingCatalogItem = null;
+        let pendingCatalogStatus = 'watched';
+        let pendingCatalogApp = 'Netflix';
 
         let watchlist = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"ytApiKey": "AIzaSyAkJtacZcD2TB1IMmWG_umpKmECVr5PYoA", "theme": "#8b5cf6", "lifetimeWatched": 0, "feedDays": 7, "sortBy": "airdate"}');
         if (!settings.feedDays) settings.feedDays = 7;
         if (!settings.sortBy) settings.sortBy = 'airdate';
 
-        // Hydrate cached queues immediately for 0ms startup
         let tvQueue = JSON.parse(localStorage.getItem(CACHE_TV_KEY) || '[]');
         let ytQueue = JSON.parse(localStorage.getItem(CACHE_YT_KEY) || '[]');
         let syncMeta = JSON.parse(localStorage.getItem(SYNC_META_KEY) || '{"lastTvSync": 0, "lastYtSync": 0}');
         let watchlistFilterQuery = '';
 
+        // Auto-updating Service Worker Registration
         if ('serviceWorker' in navigator && window.location.protocol.startsWith('http') && !window.location.host.includes('goog')) { 
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); 
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+                    reg.update();
+                }).catch(() => {});
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
+                    }
+                });
+            }); 
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -345,7 +481,6 @@
             updateSyncStatusLabel();
             refreshUI();
 
-            // Background sync TV data automatically if cache is older than 15 minutes or empty
             const fifteenMins = 15 * 60 * 1000;
             if (Date.now() - (syncMeta.lastTvSync || 0) > fifteenMins || tvQueue.length === 0) {
                 refreshTVData(false);
@@ -367,7 +502,6 @@
             el.innerText = minsAgo < 1 ? 'Synced just now' : `Synced ${minsAgo}m ago`;
         }
 
-        // Utility: Fetch with automatic retry on 429 rate-limit
         async function fetchWithRetry(url, retries = 3, delay = 1100) {
             for (let i = 0; i < retries; i++) {
                 const res = await fetch(url);
@@ -382,12 +516,12 @@
 
         function switchTab(tab) {
             activeTab = tab;
-            ['section-watchlist', 'section-tv', 'section-youtube'].forEach(s => {
+            ['section-watchlist', 'section-tv', 'section-youtube', 'section-catalog'].forEach(s => {
                 const el = document.getElementById(s);
                 if (el) el.classList.toggle('hidden', s !== `section-${tab}`);
             });
             
-            ['watchlist', 'tv', 'youtube'].forEach(t => {
+            ['watchlist', 'tv', 'youtube', 'catalog'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (el) el.className = `relative flex-1 py-3.5 text-[10px] font-bold transition-all flex flex-col items-center gap-1 ${tab === t ? 'tab-active' : 'text-slate-500'}`;
             });
@@ -433,7 +567,7 @@
                     return a.name.localeCompare(b.name);
                 });
             }
-            return copy; // 'added'
+            return copy;
         }
 
         function refreshUI() {
@@ -443,11 +577,11 @@
             const badgeWatchlist = document.getElementById('badge-watchlist');
             const badgeTV = document.getElementById('badge-tv');
             const badgeYT = document.getElementById('badge-yt');
+            const badgeCatalog = document.getElementById('badge-catalog');
             const filterBar = document.getElementById('watchlistFilterBar');
             const emptyState = document.getElementById('emptyState');
             const watchlistHeader = document.getElementById('watchlist-header');
             
-            // Ensure cached queues always respect current watched timestamps & ignored episodes
             tvQueue = tvQueue.filter(q => {
                 const liveItem = watchlist.find(w => String(w.id) === String(q.itemId));
                 if (!liveItem) return false;
@@ -464,6 +598,7 @@
             });
 
             if (badgeWatchlist) badgeWatchlist.innerText = watchlist.length;
+            if (badgeCatalog) badgeCatalog.innerText = catalog.length;
             if (filterBar) filterBar.classList.toggle('hidden', watchlist.length === 0);
             if (emptyState) emptyState.classList.toggle('hidden', watchlist.length > 0);
             if (watchlistHeader) watchlistHeader.classList.toggle('hidden', watchlist.length === 0);
@@ -503,12 +638,357 @@
                 if (ytHeader) ytHeader.classList.toggle('hidden', !hasResults);
                 if (hasResults) ytDiv.innerHTML = renderQueue(ytQueue, 'youtube');
             }
+
+            if (activeTab === 'catalog') {
+                renderCatalogSection();
+            }
             
             lucide.createIcons();
             applyTheme(settings.theme);
         }
 
-        // Parallel Batched TV Fetcher with Rate-Limit Protection
+        // ==================== CATALOG / VAULT FUNCTIONS ====================
+
+        function saveCatalog() {
+            localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog));
+        }
+
+        function mapPlatformToApp(platformStr) {
+            if (!platformStr) return 'Netflix';
+            const p = platformStr.toLowerCase();
+            if (p.includes('netflix')) return 'Netflix';
+            if (p.includes('disney')) return 'Disney+';
+            if (p.includes('hbo') || p.includes('max')) return 'Max';
+            if (p.includes('hulu') || p.includes('fx')) return 'Hulu';
+            if (p.includes('amazon') || p.includes('prime')) return 'Prime Video';
+            if (p.includes('apple')) return 'Apple TV+';
+            if (p.includes('paramount') || p.includes('cbs') || p.includes('showtime')) return 'Paramount+';
+            if (p.includes('peacock') || p.includes('nbc') || p.includes('bravo')) return 'Peacock';
+            if (p.includes('crunchyroll')) return 'Crunchyroll';
+            if (p.includes('discovery') || p.includes('tlc') || p.includes('hgtv')) return 'Discovery+';
+            if (p.includes('pbs')) return 'PBS';
+            if (p.includes('hallmark')) return 'Hallmark+';
+            return 'Netflix';
+        }
+
+        function openCatalogModal(id, defaultStatus = 'watched') {
+            const item = searchMap[id] || watchlist.find(w => String(w.id) === String(id)) || catalog.find(c => String(c.id) === String(id));
+            if (!item) return;
+
+            pendingCatalogItem = item;
+            const existing = catalog.find(c => String(c.id) === String(item.id));
+            pendingCatalogStatus = existing ? existing.status : defaultStatus;
+            pendingCatalogApp = existing ? existing.app : (item.tvApp && item.tvApp !== 'Default' ? item.tvApp : mapPlatformToApp(item.platform));
+
+            document.getElementById('catModalImg').src = item.image || FALLBACK_IMG;
+            document.getElementById('catModalType').innerText = item.mediaType || (item.type === 'movie' ? 'Movie' : 'TV Show');
+            document.getElementById('catModalTitle').innerText = item.name;
+
+            setCatModalStatus(pendingCatalogStatus);
+            renderCatModalApps();
+            document.getElementById('catalogModalOverlay').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeCatalogModal() {
+            document.getElementById('catalogModalOverlay').classList.add('hidden');
+            pendingCatalogItem = null;
+        }
+
+        function setCatModalStatus(status) {
+            pendingCatalogStatus = status;
+            const wBtn = document.getElementById('catStatusWatchedBtn');
+            const wantBtn = document.getElementById('catStatusWantBtn');
+            if (status === 'watched') {
+                wBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-emerald-600/20 border-emerald-500 text-emerald-300';
+                wantBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-800 border-slate-700 text-slate-400';
+            } else {
+                wantBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-amber-500/20 border-amber-500 text-amber-300';
+                wBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all bg-slate-800 border-slate-700 text-slate-400';
+            }
+        }
+
+        function renderCatModalApps() {
+            const apps = STREAMING_APPS.filter(a => a.name !== 'Default');
+            const grid = document.getElementById('catModalAppGrid');
+            grid.innerHTML = apps.map(a => {
+                const active = pendingCatalogApp === a.name;
+                return `<button onclick="selectCatModalApp('${a.name}')" class="p-2 text-[11px] font-bold rounded-xl border transition-all ${active ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}">${a.name}</button>`;
+            }).join('');
+        }
+
+        function selectCatModalApp(appName) {
+            pendingCatalogApp = appName;
+            renderCatModalApps();
+        }
+
+        function confirmCatalogModal() {
+            if (!pendingCatalogItem) return;
+            const idx = catalog.findIndex(c => String(c.id) === String(pendingCatalogItem.id));
+            const entry = {
+                id: String(pendingCatalogItem.id),
+                name: pendingCatalogItem.name,
+                image: pendingCatalogItem.image || FALLBACK_IMG,
+                mediaType: pendingCatalogItem.mediaType || (pendingCatalogItem.type === 'movie' ? 'Movie' : 'TV Show'),
+                app: pendingCatalogApp,
+                status: pendingCatalogStatus,
+                year: pendingCatalogItem.year || '',
+                addedAt: Date.now()
+            };
+
+            if (idx > -1) {
+                catalog[idx] = entry;
+            } else {
+                catalog.unshift(entry);
+            }
+
+            saveCatalog();
+            closeCatalogModal();
+            refreshUI();
+            const searchIn = document.getElementById('searchInput');
+            if (searchIn && searchIn.value.trim().length >= 2 && !document.getElementById('searchOverlay').classList.contains('hidden')) {
+                performSearch(searchIn.value);
+            }
+            showToast(`Saved to ${pendingCatalogApp} (${pendingCatalogStatus === 'watched' ? 'Watched' : 'Want to Watch'})`);
+        }
+
+        function toggleCatalogItemStatus(id) {
+            const idx = catalog.findIndex(c => String(c.id) === String(id));
+            if (idx === -1) return;
+            catalog[idx].status = catalog[idx].status === 'watched' ? 'want' : 'watched';
+            saveCatalog();
+            refreshUI();
+            showToast(catalog[idx].status === 'watched' ? 'Marked as Watched!' : 'Moved to Want to Watch');
+        }
+
+        function removeCatalogItem(id) {
+            if (confirm('Remove this title from your Catalog?')) {
+                catalog = catalog.filter(c => String(c.id) !== String(id));
+                saveCatalog();
+                refreshUI();
+            }
+        }
+
+        function setCatalogAppFilter(app) {
+            activeCatalogApp = app;
+            renderCatalogSection();
+            lucide.createIcons();
+        }
+
+        function setCatalogStatusFilter(status) {
+            activeCatalogStatus = status;
+            ['all', 'watched', 'want'].forEach(s => {
+                const btn = document.getElementById(`catFilter-${s}`);
+                if (btn) {
+                    const active = s === status;
+                    btn.className = `flex-1 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${active ? 'bg-slate-800 text-white shadow' : 'text-slate-400'}`;
+                }
+            });
+            renderCatalogSection();
+            lucide.createIcons();
+        }
+
+        function updateCatalogSearch() {
+            const input = document.getElementById('catalogSearchInput');
+            catalogSearchQuery = input ? input.value.toLowerCase().trim() : '';
+            renderCatalogSection();
+            lucide.createIcons();
+        }
+
+        function renderCatalogSection() {
+            const appTabsDiv = document.getElementById('catalogAppTabs');
+            const contentDiv = document.getElementById('catalogContent');
+            if (!appTabsDiv || !contentDiv) return;
+
+            const appCounts = { All: catalog.length };
+            STREAMING_APPS.filter(a => a.name !== 'Default').forEach(a => appCounts[a.name] = 0);
+            catalog.forEach(item => {
+                const app = item.app || 'Other';
+                appCounts[app] = (appCounts[app] || 0) + 1;
+            });
+
+            const appList = ['All', ...STREAMING_APPS.filter(a => a.name !== 'Default').map(a => a.name)];
+            appTabsDiv.innerHTML = appList.map(appName => {
+                const count = appCounts[appName] || 0;
+                const isActive = activeCatalogApp === appName;
+                return `<button onclick="setCatalogAppFilter('${appName}')" class="shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 ${isActive ? 'bg-purple-600 border-purple-500 text-white shadow' : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'}">
+                    <span>${appName}</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-black/25 text-white' : 'bg-slate-800 text-slate-500'}">${count}</span>
+                </button>`;
+            }).join('');
+
+            const filtered = catalog.filter(item => {
+                if (activeCatalogApp !== 'All' && item.app !== activeCatalogApp) return false;
+                if (activeCatalogStatus !== 'all' && item.status !== activeCatalogStatus) return false;
+                if (catalogSearchQuery && !item.name.toLowerCase().includes(catalogSearchQuery)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                contentDiv.innerHTML = `<div class="text-center py-16 text-slate-500 space-y-3">
+                    <i data-lucide="film" class="w-10 h-10 mx-auto opacity-20"></i>
+                    <p class="text-xs italic">${catalog.length === 0 ? 'Your streaming vault is empty. Add shows or movies you have watched or want to watch!' : 'No matching titles in this filter.'}</p>
+                </div>`;
+                return;
+            }
+
+            // Group by app when viewing "All", or flat list when viewing a specific app
+            const groups = {};
+            filtered.forEach(item => {
+                const g = activeCatalogApp === 'All' ? (item.app || 'Other') : activeCatalogApp;
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(item);
+            });
+
+            let html = '';
+            Object.keys(groups).sort().forEach(groupName => {
+                const items = groups[groupName].sort((a, b) => a.name.localeCompare(b.name));
+                const watchedCount = items.filter(i => i.status === 'watched').length;
+                html += `<div class="section-label"><span>${groupName}</span><span>${watchedCount}/${items.length} Watched</span></div>`;
+                items.forEach(item => {
+                    const isWatched = item.status === 'watched';
+                    html += `<div class="flex gap-3.5 p-3 glass-card rounded-2xl items-center fade-in-list border-l-4" style="border-left-color: ${isWatched ? '#10b981' : '#f59e0b'}">
+                        <img src="${item.image || FALLBACK_IMG}" loading="lazy" class="w-11 h-14 rounded-xl object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">${item.mediaType || 'Title'}</span>
+                                ${item.year ? `<span class="text-[9px] text-slate-500 font-semibold">${item.year}</span>` : ''}
+                            </div>
+                            <h4 class="font-bold text-sm truncate text-white mt-0.5">${item.name}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button onclick="openCatalogAppReassign('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800/90 text-slate-300 font-bold uppercase hover:border-purple-500/50 flex items-center gap-1">
+                                    <i data-lucide="tv" class="w-2.5 h-2.5"></i> ${item.app}
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="toggleCatalogItemStatus('${item.id}')" class="px-3 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 ${isWatched ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'}">
+                            <i data-lucide="${isWatched ? 'check-circle-2' : 'clock'}" class="w-3.5 h-3.5"></i>
+                            ${isWatched ? 'Watched' : 'Want'}
+                        </button>
+                        <button onclick="removeCatalogItem('${item.id}')" class="p-1.5 text-slate-600 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>`;
+                });
+            });
+
+            contentDiv.innerHTML = html;
+        }
+
+        function openCatalogAppReassign(id) {
+            activeSelectorId = id;
+            selectorMode = 'catalog';
+            const item = catalog.find(c => String(c.id) === String(id));
+            if (!item) return;
+
+            const listDiv = document.getElementById('appSelectorList');
+            listDiv.innerHTML = STREAMING_APPS.filter(a => a.name !== 'Default').map(app => {
+                const isActive = item.app === app.name;
+                return `<button onclick="selectTvApp('${app.name}')" class="p-3 text-xs font-bold rounded-xl border transition-all ${isActive ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}">
+                    ${app.name}
+                </button>`;
+            }).join('');
+
+            document.getElementById('appSelectorOverlay').classList.remove('hidden');
+            applyTheme(settings.theme);
+        }
+
+        // ==================== BULK & NETFLIX CSV IMPORT ====================
+
+        function openBulkImportModal() {
+            const sel = document.getElementById('bulkAppSelect');
+            sel.innerHTML = STREAMING_APPS.filter(a => a.name !== 'Default').map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+            document.getElementById('bulkImportOverlay').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeBulkImportModal() {
+            document.getElementById('bulkImportOverlay').classList.add('hidden');
+        }
+
+        function handleNetflixCsvUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).slice(1); // Skip CSV header
+                const extractedTitles = new Set();
+
+                lines.forEach(line => {
+                    if (!line.trim()) return;
+                    // Match quoted title or first comma column
+                    const match = line.match(/^"([^"]+)"|^([^,]+)/);
+                    let rawTitle = match ? (match[1] || match[2] || '').trim() : '';
+                    if (!rawTitle) return;
+                    // Strip ": Season X..." or ": Limited Series..." or ": Part X..." to group TV shows cleanly
+                    const cleanShow = rawTitle.split(/:\s*(?:Season|Series|Limited Series|Part|Volume|Book|Chapter|Episode)\b/i)[0].trim();
+                    if (cleanShow.length > 1) extractedTitles.add(cleanShow);
+                });
+
+                let addedCount = 0;
+                extractedTitles.forEach(title => {
+                    const exists = catalog.some(c => c.name.toLowerCase() === title.toLowerCase() && c.app === 'Netflix');
+                    if (!exists) {
+                        catalog.push({
+                            id: 'nf-' + Math.random().toString(36).substring(2, 10),
+                            name: title,
+                            image: FALLBACK_IMG,
+                            mediaType: 'Title',
+                            app: 'Netflix',
+                            status: 'watched',
+                            year: '',
+                            addedAt: Date.now()
+                        });
+                        addedCount++;
+                    }
+                });
+
+                saveCatalog();
+                closeBulkImportModal();
+                refreshUI();
+                showToast(`Imported ${addedCount} unique Netflix titles!`);
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function processBulkTextImport() {
+            const app = document.getElementById('bulkAppSelect').value || 'Netflix';
+            const status = document.getElementById('bulkStatusSelect').value || 'watched';
+            const raw = document.getElementById('bulkTextInput').value || '';
+            const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+            if (lines.length === 0) {
+                showToast("Paste at least one title first.");
+                return;
+            }
+
+            let added = 0;
+            lines.forEach(title => {
+                const exists = catalog.some(c => c.name.toLowerCase() === title.toLowerCase() && c.app === app);
+                if (!exists) {
+                    catalog.unshift({
+                        id: 'custom-' + Math.random().toString(36).substring(2, 10),
+                        name: title,
+                        image: FALLBACK_IMG,
+                        mediaType: 'Title',
+                        app: app,
+                        status: status,
+                        year: '',
+                        addedAt: Date.now()
+                    });
+                    added++;
+                }
+            });
+
+            document.getElementById('bulkTextInput').value = '';
+            saveCatalog();
+            closeBulkImportModal();
+            refreshUI();
+            showToast(`Added ${added} titles to ${app}!`);
+        }
+
+        // ==================== TV & YOUTUBE SYNC ====================
+
         async function refreshTVData(forceAll = false) {
             if (isRefreshingTV) return;
             isRefreshingTV = true;
@@ -520,7 +1000,6 @@
             const historyLimit = now - (settings.feedDays * 86400000);
             const tvItems = watchlist.filter(i => i.type === 'tv');
 
-            // Preserve cached episodes for Ended shows that we skip during quick background sync
             let tempQueue = [];
             let dataChanged = false;
 
@@ -575,14 +1054,11 @@
                             }
                         }
                     } catch (e) {
-                        console.warn(`TV Fetch skipped for ${item.name}:`, e);
-                        // Keep previously cached queue items for this show if offline/error
                         const cachedForShow = tvQueue.filter(q => String(q.itemId) === String(item.id));
                         tempQueue.push(...cachedForShow);
                     }
                 }));
 
-                // Small 250ms breather between batches of 5 to stay well below TVMaze rate limits
                 if (i + CONCURRENCY < itemsToFetch.length) {
                     await new Promise(r => setTimeout(r, 250));
                 }
@@ -610,7 +1086,6 @@
             return hours * 3600 + minutes * 60 + seconds;
         }
 
-        // Parallel YouTube Fetcher with Batched Video Duration Lookup
         async function refreshYouTubeData() {
             const now = Date.now();
             const historyLimit = now - (settings.feedDays * 86400000);
@@ -618,8 +1093,6 @@
             if (ytItems.length === 0) return;
 
             let rawUploads = [];
-
-            // Step 1: Fetch channel activities in parallel batches of 5
             const CONCURRENCY = 5;
             for (let i = 0; i < ytItems.length; i += CONCURRENCY) {
                 const batch = ytItems.slice(i, i + CONCURRENCY);
@@ -645,7 +1118,6 @@
                 }));
             }
 
-            // Step 2: Batch up to 50 video IDs per request to check durations (saves API quota & speed)
             const videoMetadata = {};
             const allVideoIds = [...new Set(rawUploads.map(u => u.videoId))];
             for (let i = 0; i < allVideoIds.length; i += 50) {
@@ -661,7 +1133,6 @@
                 } catch (e) { console.error("YT Duration Batch Error:", e); }
             }
 
-            // Step 3: Filter by user preference (Videos / Shorts / Both)
             let tempQueue = [];
             rawUploads.forEach(u => {
                 const pref = u.item.ytPref || 'videos';
@@ -705,6 +1176,7 @@
 
         function openAppSelector(id) {
             activeSelectorId = id;
+            selectorMode = 'watchlist';
             const item = watchlist.find(i => i.id == id);
             if (!item) return;
             
@@ -727,6 +1199,18 @@
 
         function selectTvApp(appName) {
             if (!activeSelectorId) return;
+            if (selectorMode === 'catalog') {
+                const cIdx = catalog.findIndex(c => String(c.id) === String(activeSelectorId));
+                if (cIdx !== -1) {
+                    catalog[cIdx].app = appName;
+                    saveCatalog();
+                    refreshUI();
+                    showToast(`Moved to ${appName}`);
+                }
+                closeAppSelector();
+                return;
+            }
+
             const idx = watchlist.findIndex(i => i.id == activeSelectorId);
             if (idx !== -1) {
                 watchlist[idx].tvApp = appName;
@@ -788,6 +1272,7 @@
             const themeColor = settings.theme || '#8b5cf6';
             const themeBg = themeColor + '26'; 
             const isEnded = isTV && item.showStatus === 'Ended' && !item.nextAirDate;
+            const inCatalog = catalog.find(c => String(c.id) === String(item.id));
             
             return `<div class="flex gap-3.5 p-3.5 glass-card rounded-2xl items-center relative fade-in-list">
                 <img src="${item.image || FALLBACK_IMG}" loading="lazy" class="w-12 h-12 ${isYT ? 'rounded-full' : 'rounded-xl'} object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
@@ -800,6 +1285,9 @@
                         ${isYT ? `<button onclick="cycleYtPref('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800 text-slate-300 font-bold uppercase hover:border-purple-500/50">${prefLabel}</button>` : ''}
                         ${isTV ? `<button onclick="openAppSelector('${item.id}')" class="text-[9px] px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800 text-slate-300 font-bold uppercase hover:border-purple-500/50 flex items-center gap-1">
                             <i data-lucide="tv" class="w-2.5 h-2.5"></i> ${tvApp}
+                        </button>
+                        <button onclick="openCatalogModal('${item.id}', 'watched')" class="text-[9px] px-2 py-0.5 rounded-md border ${inCatalog ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-800 text-slate-400'} font-bold uppercase flex items-center gap-1">
+                            <i data-lucide="bookmark-check" class="w-2.5 h-2.5"></i> ${inCatalog ? (inCatalog.status === 'watched' ? 'Watched' : 'In Catalog') : '+ Catalog'}
                         </button>` : ''}
                     </div>
                     ${isTV && item.nextAirDate ? `
@@ -1063,8 +1551,10 @@
             document.getElementById('settingsOverlay').classList.toggle('hidden'); 
             const fld = document.getElementById('stat-followed');
             const wtd = document.getElementById('stat-watched');
+            const cat = document.getElementById('stat-catalog');
             if (fld) fld.innerText = watchlist.length; 
             if (wtd) wtd.innerText = settings.lifetimeWatched || 0; 
+            if (cat) cat.innerText = catalog.length;
             updateSettingsUI();
         }
 
@@ -1107,7 +1597,7 @@
         }
 
         function removeManual(id) {
-            if (confirm("Unfollow this show/channel?")) {
+            if (confirm("Stop tracking new episodes for this show/channel?")) {
                 watchlist = watchlist.filter(s => String(s.id) !== String(id));
                 tvQueue = tvQueue.filter(q => String(q.itemId) !== String(id));
                 ytQueue = ytQueue.filter(q => String(q.itemId) !== String(id));
@@ -1128,6 +1618,17 @@
                     const r = await fetchWithRetry(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`);
                     const d = await r.json();
                     resDiv.innerHTML = d.length ? d.map(i => renderSearchResult(i.show, 'tv')).join('') : '<p class="text-center text-xs text-slate-500 py-8">No TV shows found.</p>';
+                } else if (searchType === 'movie') {
+                    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=movie&limit=20`);
+                    const d = await r.json();
+                    resDiv.innerHTML = d.results?.length ? d.results.map(m => renderSearchResult({
+                        id: 'mov-' + m.trackId,
+                        name: m.trackName,
+                        image: m.artworkUrl100 ? m.artworkUrl100.replace('100x100bb', '300x300bb') : FALLBACK_IMG,
+                        premiered: m.releaseDate || '',
+                        platform: m.primaryGenreName || 'Movie',
+                        mediaType: 'Movie'
+                    }, 'movie')).join('') : '<p class="text-center text-xs text-slate-500 py-8">No movies found.</p>';
                 } else {
                     if (!settings.ytApiKey) {
                         resDiv.innerHTML = '<p class="text-center text-xs text-red-400 p-4">Please add a YouTube API Key in settings first.</p>';
@@ -1148,22 +1649,22 @@
             lucide.createIcons();
         }
 
-		// Global map to hold search results securely without attribute string breaking
-        let searchMap = {};
-
         function renderSearchResult(s, type) {
             const isAdded = watchlist.some(w => String(w.id) === String(s.id));
+            const catItem = catalog.find(c => String(c.id) === String(s.id));
             const themeColor = settings.theme || '#8b5cf6';
             const imgUrl = s.image?.medium || s.image || FALLBACK_IMG;
-            const platform = s.network?.name || s.webChannel?.name || (type === 'youtube' ? 'YouTube' : 'Streaming');
+            const platform = s.platform || s.network?.name || s.webChannel?.name || (type === 'youtube' ? 'YouTube' : 'Streaming');
             const status = s.status || 'Running';
+            const year = s.premiered ? s.premiered.slice(0, 4) : '';
 
-            // Store object in memory map using its unique ID
             searchMap[s.id] = {
                 id: s.id,
                 name: s.name,
                 image: imgUrl,
                 type: type,
+                mediaType: type === 'movie' ? 'Movie' : 'TV Show',
+                year: year,
                 officialSite: s.officialSite || '',
                 platform: platform,
                 showStatus: status
@@ -1173,8 +1674,17 @@
                 <img src="${imgUrl}" loading="lazy" class="w-12 h-16 rounded-lg object-cover bg-slate-800 shrink-0" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-sm truncate">${s.name}</h4>
-                    <p class="text-[10px] text-slate-400 truncate">${platform}${type === 'tv' && s.premiered ? ` • ${s.premiered.slice(0,4)}` : ''}${status === 'Ended' ? ' • Ended' : ''}</p>
-                    <button onclick="toggleFollow('${s.id}')" class="text-[10px] px-3.5 py-1.5 rounded-lg mt-2 font-bold transition-all" style="background-color: ${isAdded ? '#334155' : themeColor}; color: ${isAdded ? '#94a3b8' : 'white'}">${isAdded ? 'Following' : '+ Follow'}</button>
+                    <p class="text-[10px] text-slate-400 truncate">${platform}${year ? ` • ${year}` : ''}${type === 'tv' && status === 'Ended' ? ' • Ended' : ''}</p>
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        ${type !== 'movie' ? `
+                        <button onclick="toggleFollow('${s.id}')" class="text-[10px] px-3 py-1.5 rounded-lg font-bold transition-all" style="background-color: ${isAdded ? '#334155' : themeColor}; color: ${isAdded ? '#94a3b8' : 'white'}">
+                            ${isAdded ? 'Tracking Eps' : '+ Track Eps'}
+                        </button>` : ''}
+                        ${type !== 'youtube' ? `
+                        <button onclick="openCatalogModal('${s.id}', 'watched')" class="text-[10px] px-3 py-1.5 rounded-lg font-bold border transition-all ${catItem ? (catItem.status === 'watched' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/20 border-amber-500/40 text-amber-300') : 'bg-slate-800 border-slate-700 text-slate-300'}">
+                            ${catItem ? `${catItem.status === 'watched' ? '✓ Watched' : '🕒 Want'} (${catItem.app})` : '+ Catalog / Watched'}
+                        </button>` : ''}
+                    </div>
                 </div>
             </div>`;
         }
@@ -1201,16 +1711,17 @@
 
         function setSearchType(t) { 
             searchType = t; 
-            const btnTV = document.getElementById('searchTypeTV');
-            const btnYT = document.getElementById('searchTypeYT');
-            if (btnTV) btnTV.className = `flex-1 py-2 text-xs font-bold rounded-lg ${t === 'tv' ? 'search-type-active' : 'text-slate-400'}`; 
-            if (btnYT) btnYT.className = `flex-1 py-2 text-xs font-bold rounded-lg ${t === 'youtube' ? 'search-type-active' : 'text-slate-400'}`; 
+            ['TV', 'Movie', 'YT'].forEach(k => {
+                const mapKey = k === 'TV' ? 'tv' : (k === 'Movie' ? 'movie' : 'youtube');
+                const btn = document.getElementById(`searchType${k}`);
+                if (btn) btn.className = `flex-1 py-2 text-xs font-bold rounded-lg ${t === mapKey ? 'search-type-active' : 'text-slate-400'}`;
+            });
             performSearch(document.getElementById('searchInput').value); 
         }
 
         function exportData() {
-            navigator.clipboard.writeText(JSON.stringify({ watchlist, settings }));
-            showToast("Backup copied to clipboard!");
+            navigator.clipboard.writeText(JSON.stringify({ watchlist, catalog, settings }));
+            showToast("Backup (including Catalog) copied!");
         }
 
         function importData() { 
@@ -1219,8 +1730,10 @@
                 try {
                     const d = JSON.parse(p); 
                     watchlist = d.watchlist || [];
+                    if (Array.isArray(d.catalog)) catalog = d.catalog;
                     settings = { ...settings, ...(d.settings || {}) }; 
                     saveData();
+                    saveCatalog();
                     saveSettings(true);
                     refreshTVData(true);
                     showToast("Backup restored! Syncing shows...");
